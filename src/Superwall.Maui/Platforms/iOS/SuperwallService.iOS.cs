@@ -1,0 +1,135 @@
+using System.Text.Json;
+using Foundation;
+using Superwall.Maui.Bridge;
+using Superwall.Maui.Platforms.iOS.Native;
+
+namespace Superwall.Maui;
+
+internal sealed partial class SuperwallService
+{
+    // Native code also retains listeners; these references keep the managed peers alive until a terminal callback.
+    private readonly HashSet<PresentationListener> _activeListeners = [];
+    private EventListener? _eventListener;
+
+    private partial void PlatformConfigure()
+    {
+        _eventListener = new EventListener(this);
+        var bridge = SWMBridge.Shared;
+        bridge.EventListener = _eventListener;
+        bridge.Configure(
+            _options.GetApiKeyForCurrentPlatform()!,
+            BridgeJson.SerializeOptions(_options),
+            (success, error) =>
+            {
+                IsConfigured = success;
+                if (!success)
+                {
+                    Console.WriteLine($"[Superwall.Maui] Superwall configuration failed: {error}");
+                }
+            });
+    }
+
+    private partial Task PlatformRegisterAsync(string placement, string? paramsJson, PaywallPresentationHandler? handler, Action? feature)
+    {
+        var listener = new PresentationListener(this, handler, feature);
+        lock (_activeListeners)
+        {
+            _activeListeners.Add(listener);
+        }
+
+        SWMBridge.Shared.Register(placement, paramsJson, feature is not null, listener);
+        return Task.CompletedTask;
+    }
+
+    private partial Task PlatformDismissAsync()
+    {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        SWMBridge.Shared.Dismiss(() => tcs.TrySetResult());
+        return tcs.Task;
+    }
+
+    private void Release(PresentationListener listener)
+    {
+        lock (_activeListeners)
+        {
+            _activeListeners.Remove(listener);
+        }
+    }
+
+    private sealed class PresentationListener(SuperwallService owner, PaywallPresentationHandler? handler, Action? feature)
+        : NSObject, ISWMPresentationListener
+    {
+        [Export("onPresent:")]
+        public void OnPresent(string paywallInfoJson) =>
+            Deliver(() =>
+            {
+                var info = BridgeJson.ParsePaywallInfo(paywallInfoJson);
+                return () => handler?.OnPresent?.Invoke(info);
+            });
+
+        [Export("onDismiss:resultJson:")]
+        public void OnDismiss(string paywallInfoJson, string resultJson)
+        {
+            owner.Release(this);
+            Deliver(() =>
+            {
+                var info = BridgeJson.ParsePaywallInfo(paywallInfoJson);
+                var result = BridgeJson.ParsePaywallResult(resultJson);
+                return () => handler?.OnDismiss?.Invoke(info, result);
+            });
+        }
+
+        [Export("onError:")]
+        public void OnError(string message)
+        {
+            owner.Release(this);
+            RunOnMainThread(() => handler?.OnError?.Invoke(message));
+        }
+
+        [Export("onSkip:")]
+        public void OnSkip(string reasonJson)
+        {
+            owner.Release(this);
+            var reason = BridgeJson.ParseSkipReason(reasonJson);
+            RunOnMainThread(() => handler?.OnSkip?.Invoke(reason));
+        }
+
+        [Export("onFeature")]
+        public void OnFeature() => RunOnMainThread(() => feature?.Invoke());
+
+        private void Deliver(Func<Action> parse)
+        {
+            Action callback;
+            try
+            {
+                callback = parse();
+            }
+            catch (JsonException ex)
+            {
+                callback = () => handler?.OnError?.Invoke($"Superwall.Maui bridge contract error: {ex.Message}");
+            }
+
+            RunOnMainThread(callback);
+        }
+    }
+
+    private sealed class EventListener(SuperwallService owner) : NSObject, ISWMEventListener
+    {
+        [Export("onEvent:")]
+        public void OnEvent(string eventJson)
+        {
+            SuperwallEventInfo info;
+            try
+            {
+                info = BridgeJson.ParseEvent(eventJson);
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"[Superwall.Maui] Dropped malformed event: {ex.Message}");
+                return;
+            }
+
+            owner.RaiseEvent(info);
+        }
+    }
+}

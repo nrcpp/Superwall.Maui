@@ -1,0 +1,48 @@
+# XcodeGen spec (source of truth). Regenerate with: cd native/ios && xcodegen generate
+# SuperwallKit version must match SuperwallIosVersion in Directory.Build.props.
+name: SuperwallMauiBridge
+options:
+  bundleIdPrefix: com.superwall.maui
+  deploymentTarget:
+    iOS: "15.0"
+packages:
+  SuperwallKit:
+    url: https://github.com/superwall/Superwall-iOS
+    exactVersion: 4.18.3
+targets:
+  SuperwallMauiBridge:
+    type: framework
+    platform: iOS
+    sources:
+      - SuperwallMauiBridge
+    dependencies:
+      - package: SuperwallKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.superwall.maui.SuperwallMauiBridge
+        GENERATE_INFOPLIST_FILE: YES
+        MACH_O_TYPE: mh_dylib
+        BUILD_LIBRARY_FOR_DISTRIBUTION: YES
+        DEFINES_MODULE: YES
+        SWIFT_VERSION: "5.0"
+        SWIFT_INSTALL_OBJC_HEADER: YES
+        SKIP_INSTALL: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    postBuildScripts:
+      # SPM does not embed package resource bundles into framework targets. SuperwallKit's Bundle.module
+      # looks next to the binary that contains it (this framework) and fatalErrors if the bundle is missing.
+      - name: Embed SuperwallKit resources
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          SRC="${BUILT_PRODUCTS_DIR}/SuperwallKit_SuperwallKit.bundle"
+          DST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/SuperwallKit_SuperwallKit.bundle"
+          if [ ! -d "$SRC" ]; then
+            echo "error: $SRC not found"
+            exit 1
+          fi
+          rm -rf "$DST"
+          # In archive builds BUILT_PRODUCTS_DIR holds a symlink to the bundle: copy the target (-L).
+          cp -RL "$SRC" "$DST"
+    scheme: {}

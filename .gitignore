@@ -1,0 +1,20 @@
+bin/
+obj/
+artifacts/
+.vs/
+.idea/
+*.user
+.DS_Store
+
+# Local secrets (API keys)
+*.local.cs
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Android / Gradle
+native/android/.gradle/
+native/android/**/build/
+native/android/local.properties

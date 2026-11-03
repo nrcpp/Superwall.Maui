@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Superwall.Maui.Sample.MainPage"
+             Title="Superwall Sample">
+
+    <Grid Padding="20" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*">
+        <Label x:Name="StatusLabel" Grid.Row="0" FontSize="14" />
+
+        <Entry x:Name="PlacementEntry" Grid.Row="1" Placeholder="Placement" Text="onboarding_complete"
+               AutomationId="PlacementEntry" />
+
+        <HorizontalStackLayout Grid.Row="2" Spacing="12">
+            <Button x:Name="ShowButton" Text="Show Paywall" Clicked="OnShowClicked" AutomationId="ShowPaywall" />
+            <Button x:Name="DismissButton" Text="Dismiss" Clicked="OnDismissClicked" AutomationId="Dismiss" />
+        </HorizontalStackLayout>
+
+        <HorizontalStackLayout Grid.Row="3" Spacing="8">
+            <CheckBox x:Name="AutoDismissCheckBox" AutomationId="AutoDismiss" VerticalOptions="Center" />
+            <Label Text="Dismiss from code 5 s after present" VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+        <Label Grid.Row="4" Text="Log" FontAttributes="Bold" />
+
+        <CollectionView x:Name="LogView" Grid.Row="5">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <Label Text="{Binding .}" FontSize="12" Padding="0,2" />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>
