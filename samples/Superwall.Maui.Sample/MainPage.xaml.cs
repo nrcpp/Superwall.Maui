@@ -68,6 +68,44 @@ public partial class MainPage : ContentPage
 
 	private async void OnDismissClicked(object? sender, EventArgs e) => await DismissAsync();
 
+	private async void OnStatusClicked(object? sender, EventArgs e)
+	{
+		if (_superwall is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var status = await _superwall.GetSubscriptionStatusAsync();
+			Log($"subscription status: {status.Status}; active entitlements=[{string.Join(", ", status.ActiveEntitlementIds)}]");
+		}
+		catch (Exception ex)
+		{
+			Log($"status query failed: {ex.Message}");
+		}
+	}
+
+	private async void OnRestoreClicked(object? sender, EventArgs e)
+	{
+		if (_superwall is null)
+		{
+			return;
+		}
+
+		try
+		{
+			var restore = await _superwall.RestorePurchasesAsync();
+			Log($"restore: success={restore.WasSuccessful}; error={restore.Error ?? "none"}");
+			var status = await _superwall.GetSubscriptionStatusAsync();
+			Log($"subscription after restore: {status.Status}; active entitlements=[{string.Join(", ", status.ActiveEntitlementIds)}]");
+		}
+		catch (Exception ex)
+		{
+			Log($"restore failed: {ex.Message}");
+		}
+	}
+
 	private async void DismissLater()
 	{
 		await Task.Delay(TimeSpan.FromSeconds(5));

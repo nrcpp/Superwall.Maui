@@ -11,7 +11,7 @@ internal sealed partial class SuperwallService
     private readonly HashSet<PresentationListener> _activeListeners = [];
     private EventListener? _eventListener;
 
-    private partial void PlatformConfigure()
+    private partial void PlatformConfigure(object? application)
     {
         _eventListener = new EventListener(this);
         var bridge = SWMBridge.Shared;
@@ -45,6 +45,26 @@ internal sealed partial class SuperwallService
     {
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         SWMBridge.Shared.Dismiss(() => tcs.TrySetResult());
+        return tcs.Task;
+    }
+
+    private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync() =>
+        Task.FromResult(BridgeJson.ParseSubscriptionStatus(SWMBridge.Shared.GetSubscriptionStatusJson()));
+
+    private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync()
+    {
+        var tcs = new TaskCompletionSource<RestorePurchasesResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SWMBridge.Shared.RestorePurchases(json =>
+        {
+            try
+            {
+                tcs.TrySetResult(BridgeJson.ParseRestoreResult(json));
+            }
+            catch (JsonException ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        });
         return tcs.Task;
     }
 

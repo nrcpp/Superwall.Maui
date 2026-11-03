@@ -29,6 +29,12 @@ namespace Superwall.Maui.Platforms.iOS.Native
 
         [Export("dismissWithCompletion:")]
         void Dismiss(Action completion);
+
+        [Export("getSubscriptionStatusJson")]
+        string GetSubscriptionStatusJson();
+
+        [Export("restorePurchasesWithCompletion:")]
+        void RestorePurchases(Action<NSString> completion);
     }
 
     interface ISWMPresentationListener { }

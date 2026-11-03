@@ -49,6 +49,9 @@ public final class SWMBridge: NSObject {
       if let level = Self.parseLogLevel(optionsJson) {
         options.logging.level = level
       }
+      if let behavior = Self.parseTestModeBehavior(optionsJson) {
+        options.testModeBehavior = behavior
+      }
 
       let superwall = Superwall.configure(apiKey: apiKey, purchaseController: nil, options: options) {
         let status = Superwall.shared.configurationStatus
@@ -108,6 +111,25 @@ public final class SWMBridge: NSObject {
     }
   }
 
+  @objc public func getSubscriptionStatusJson() -> String {
+    guard Superwall.isInitialized else {
+      return Self.json(SubscriptionStatus.unknown)
+    }
+    return Self.json(Superwall.shared.subscriptionStatus)
+  }
+
+  @objc public func restorePurchases(completion: @escaping (String) -> Void) {
+    onMain {
+      guard Superwall.isInitialized else {
+        completion(Self.restoreResultJson(.failed(nil)))
+        return
+      }
+      Superwall.shared.restorePurchases { result in
+        completion(Self.restoreResultJson(result))
+      }
+    }
+  }
+
   // MARK: - Mapping to the JSON contract
 
   private static func parseLogLevel(_ optionsJson: String?) -> LogLevel? {
@@ -117,6 +139,16 @@ public final class SWMBridge: NSObject {
     case "warn": return .warn
     case "error": return .error
     case "none": return LogLevel.none
+    default: return nil
+    }
+  }
+
+  private static func parseTestModeBehavior(_ optionsJson: String?) -> SuperwallOptions.TestModeBehavior? {
+    switch parseObject(optionsJson)?["testModeBehavior"] as? String {
+    case "automatic": return .automatic
+    case "whenEnabledForUser": return .whenEnabledForUser
+    case "never": return .never
+    case "always": return .always
     default: return nil
     }
   }
@@ -141,6 +173,37 @@ public final class SWMBridge: NSObject {
       return serialize(["type": "restored"])
     @unknown default:
       return serialize(["type": "unknown"])
+    }
+  }
+
+  private static func json(_ status: SubscriptionStatus) -> String {
+    let activeIds: [String]
+    let state: String
+    switch status {
+    case .unknown:
+      activeIds = []
+      state = "unknown"
+    case .inactive:
+      activeIds = []
+      state = "inactive"
+    case .active(let entitlements):
+      activeIds = entitlements.filter(\.isActive).map(\.id).sorted()
+      state = activeIds.isEmpty ? "inactive" : "active"
+    @unknown default:
+      activeIds = []
+      state = "unknown"
+    }
+    return serialize(["status": state, "activeEntitlementIds": activeIds])
+  }
+
+  private static func restoreResultJson(_ result: RestorationResult) -> String {
+    switch result {
+    case .restored:
+      return serialize(["type": "restored"])
+    case .failed(let error):
+      return serialize(["type": "failed", "error": error?.localizedDescription ?? NSNull()])
+    @unknown default:
+      return serialize(["type": "failed", "error": "Unknown restoration result"])
     }
   }
 

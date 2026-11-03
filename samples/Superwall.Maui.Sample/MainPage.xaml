@@ -4,7 +4,7 @@
              x:Class="Superwall.Maui.Sample.MainPage"
              Title="Superwall Sample">
 
-    <Grid Padding="20" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*">
+    <Grid Padding="20" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*">
         <Label x:Name="StatusLabel" Grid.Row="0" FontSize="14" />
 
         <Entry x:Name="PlacementEntry" Grid.Row="1" Placeholder="Placement" Text="onboarding_complete"
@@ -20,9 +20,14 @@
             <Label Text="Dismiss from code 5 s after present" VerticalOptions="Center" />
         </HorizontalStackLayout>
 
-        <Label Grid.Row="4" Text="Log" FontAttributes="Bold" />
+        <HorizontalStackLayout Grid.Row="4" Spacing="12">
+            <Button Text="Check Status" Clicked="OnStatusClicked" AutomationId="CheckStatus" />
+            <Button Text="Restore Purchases" Clicked="OnRestoreClicked" AutomationId="RestorePurchases" />
+        </HorizontalStackLayout>
 
-        <CollectionView x:Name="LogView" Grid.Row="5">
+        <Label Grid.Row="5" Text="Log" FontAttributes="Bold" />
+
+        <CollectionView x:Name="LogView" Grid.Row="6">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                     <Label Text="{Binding .}" FontSize="12" Padding="0,2" />

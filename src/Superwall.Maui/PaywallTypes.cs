@@ -45,3 +45,16 @@ public enum PaywallSkippedReason
 
 /// <summary>A raw Superwall event, e.g. <c>paywall_open</c>.</summary>
 public sealed record SuperwallEventInfo(string Name, IReadOnlyDictionary<string, string?> Params);
+
+public enum SuperwallSubscriptionState
+{
+    Unknown,
+    Inactive,
+    Active,
+}
+
+public sealed record SubscriptionStatusInfo(
+    SuperwallSubscriptionState Status,
+    IReadOnlyList<string> ActiveEntitlementIds);
+
+public sealed record RestorePurchasesResult(bool WasSuccessful, string? Error);

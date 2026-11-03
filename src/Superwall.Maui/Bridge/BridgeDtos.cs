@@ -7,6 +7,7 @@ namespace Superwall.Maui.Bridge;
 internal sealed class OptionsDto
 {
     public string LogLevel { get; set; } = "warn";
+    public string TestModeBehavior { get; set; } = "automatic";
 }
 
 internal sealed class PaywallInfoDto
@@ -35,6 +36,18 @@ internal sealed class EventDto
     public Dictionary<string, string?>? Params { get; set; }
 }
 
+internal sealed class SubscriptionStatusDto
+{
+    public string? Status { get; set; }
+    public List<string>? ActiveEntitlementIds { get; set; }
+}
+
+internal sealed class RestorePurchasesResultDto
+{
+    public string? Type { get; set; }
+    public string? Error { get; set; }
+}
+
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
@@ -43,6 +56,8 @@ internal sealed class EventDto
 [JsonSerializable(typeof(PaywallResultDto))]
 [JsonSerializable(typeof(SkipReasonDto))]
 [JsonSerializable(typeof(EventDto))]
+[JsonSerializable(typeof(SubscriptionStatusDto))]
+[JsonSerializable(typeof(RestorePurchasesResultDto))]
 internal sealed partial class BridgeJsonContext : JsonSerializerContext
 {
 }

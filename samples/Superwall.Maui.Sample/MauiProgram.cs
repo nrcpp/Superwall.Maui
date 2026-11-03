@@ -31,6 +31,9 @@ public static class MauiProgram
 				o.AppleApiKey = SampleSecrets.AppleApiKey;
 				o.AndroidApiKey = SampleSecrets.AndroidApiKey;
 				o.LogLevel = SuperwallLogLevel.Debug;
+#if ANDROID && DEBUG
+				o.TestModeBehavior = SuperwallTestModeBehavior.Always;
+#endif
 			});
 		}
 

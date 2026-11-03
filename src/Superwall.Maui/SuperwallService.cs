@@ -27,7 +27,11 @@ internal sealed partial class SuperwallService : ISuperwall
 
     public Task DismissAsync() => PlatformDismissAsync();
 
-    internal void Configure()
+    public Task<SubscriptionStatusInfo> GetSubscriptionStatusAsync() => PlatformGetSubscriptionStatusAsync();
+
+    public Task<RestorePurchasesResult> RestorePurchasesAsync() => PlatformRestorePurchasesAsync();
+
+    internal void Configure(object? application = null)
     {
         if (_configureStarted)
         {
@@ -35,14 +39,18 @@ internal sealed partial class SuperwallService : ISuperwall
         }
 
         _configureStarted = true;
-        PlatformConfigure();
+        PlatformConfigure(application);
     }
 
-    private partial void PlatformConfigure();
+    private partial void PlatformConfigure(object? application);
 
     private partial Task PlatformRegisterAsync(string placement, string? paramsJson, PaywallPresentationHandler? handler, Action? feature);
 
     private partial Task PlatformDismissAsync();
+
+    private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync();
+
+    private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync();
 
     private void RaiseEvent(SuperwallEventInfo info) => RunOnMainThread(() => EventReceived?.Invoke(this, info));
 

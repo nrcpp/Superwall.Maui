@@ -9,8 +9,5 @@
     <SuperwallIosVersion>4.18.3</SuperwallIosVersion>
     <SuperwallAndroidVersion>2.9.0</SuperwallAndroidVersion>
 
-    <!-- Local toolchain is Xcode 27.2, the newest .NET iOS workload (27.1.10018) requires exactly 27.1.
-         See docs/architecture.md, decision log 2026-11-03. Remove once a workload for the installed Xcode ships. -->
-    <ValidateXcodeVersion Condition="'$(ValidateXcodeVersion)' == ''">false</ValidateXcodeVersion>
   </PropertyGroup>
 </Project>

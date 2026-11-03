@@ -21,4 +21,13 @@ public interface ISuperwall
 
     /// <summary>Dismisses the currently presented paywall, if any.</summary>
     Task DismissAsync();
+
+    /// <summary>Reads the native SDK's current subscription state and active entitlement identifiers.</summary>
+    Task<SubscriptionStatusInfo> GetSubscriptionStatusAsync();
+
+    /// <summary>
+    /// Restores purchases. A successful restore does not imply an active entitlement;
+    /// call <see cref="GetSubscriptionStatusAsync"/> to read the resulting state.
+    /// </summary>
+    Task<RestorePurchasesResult> RestorePurchasesAsync();
 }

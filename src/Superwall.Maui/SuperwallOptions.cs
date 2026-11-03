@@ -12,6 +12,9 @@ public sealed class SuperwallOptions
     /// <summary>Native SDK log level.</summary>
     public SuperwallLogLevel LogLevel { get; set; } = SuperwallLogLevel.Warn;
 
+    /// <summary>Controls when the native SDK enters Test Mode. Defaults to automatic.</summary>
+    public SuperwallTestModeBehavior TestModeBehavior { get; set; } = SuperwallTestModeBehavior.Automatic;
+
     internal string? GetApiKeyForCurrentPlatform()
     {
 #if IOS
@@ -31,4 +34,12 @@ public enum SuperwallLogLevel
     Warn,
     Error,
     None,
+}
+
+public enum SuperwallTestModeBehavior
+{
+    Automatic,
+    WhenEnabledForUser,
+    Never,
+    Always,
 }

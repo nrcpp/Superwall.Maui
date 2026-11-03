@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
-#if IOS
+#if IOS || ANDROID
 using Microsoft.Maui.LifecycleEvents;
 #endif
 
@@ -42,6 +42,9 @@ public static class MauiAppBuilderExtensions
             service.Configure();
             return true;
         })));
+#elif ANDROID
+                builder.ConfigureLifecycleEvents(events => events.AddAndroid(android => android.OnApplicationCreate(application =>
+                        service.Configure(application))));
 #endif
 
         return builder;

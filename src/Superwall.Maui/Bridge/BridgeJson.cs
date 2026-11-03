@@ -8,7 +8,11 @@ internal static class BridgeJson
 {
     public static string SerializeOptions(SuperwallOptions options) =>
         JsonSerializer.Serialize(
-            new OptionsDto { LogLevel = ToWire(options.LogLevel) },
+            new OptionsDto
+            {
+                LogLevel = ToWire(options.LogLevel),
+                TestModeBehavior = ToWire(options.TestModeBehavior),
+            },
             BridgeJsonContext.Default.OptionsDto);
 
     public static string? SerializeParams(IReadOnlyDictionary<string, object>? parameters)
@@ -93,6 +97,31 @@ internal static class BridgeJson
             dto.Params ?? new Dictionary<string, string?>());
     }
 
+    public static SubscriptionStatusInfo ParseSubscriptionStatus(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.SubscriptionStatusDto)
+            ?? throw new JsonException("subscriptionStatusJson is null");
+        var status = dto.Status switch
+        {
+            "active" => SuperwallSubscriptionState.Active,
+            "inactive" => SuperwallSubscriptionState.Inactive,
+            _ => SuperwallSubscriptionState.Unknown,
+        };
+        return new SubscriptionStatusInfo(status, dto.ActiveEntitlementIds ?? []);
+    }
+
+    public static RestorePurchasesResult ParseRestoreResult(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.RestorePurchasesResultDto)
+            ?? throw new JsonException("restoreResultJson is null");
+        return dto.Type switch
+        {
+            "restored" => new RestorePurchasesResult(true, null),
+            "failed" => new RestorePurchasesResult(false, dto.Error),
+            _ => throw new JsonException($"Unknown restore result type '{dto.Type}'"),
+        };
+    }
+
     private static string ToWire(SuperwallLogLevel level) => level switch
     {
         SuperwallLogLevel.Debug => "debug",
@@ -101,5 +130,14 @@ internal static class BridgeJson
         SuperwallLogLevel.Error => "error",
         SuperwallLogLevel.None => "none",
         _ => throw new ArgumentOutOfRangeException(nameof(level), level, null),
+    };
+
+    private static string ToWire(SuperwallTestModeBehavior behavior) => behavior switch
+    {
+        SuperwallTestModeBehavior.Automatic => "automatic",
+        SuperwallTestModeBehavior.WhenEnabledForUser => "whenEnabledForUser",
+        SuperwallTestModeBehavior.Never => "never",
+        SuperwallTestModeBehavior.Always => "always",
+        _ => throw new ArgumentOutOfRangeException(nameof(behavior), behavior, null),
     };
 }

@@ -1,11 +1,49 @@
 <Project>
   <PropertyGroup>
     <MauiPackageVersion>10.0.110</MauiPackageVersion>
+    <KotlinPackageVersion>2.2.0.1</KotlinPackageVersion>
+    <KotlinJdk8PackageVersion>2.2.0.1</KotlinJdk8PackageVersion>
+    <KotlinCommonPackageVersion>2.0.21.4</KotlinCommonPackageVersion>
+    <CoroutinesPackageVersion>1.10.2.1</CoroutinesPackageVersion>
+    <SerializationCoreJvmPackageVersion>1.9.0.1</SerializationCoreJvmPackageVersion>
+    <WorkRuntimePackageVersion>2.9.0.6</WorkRuntimePackageVersion>
+    <LifecyclePackageVersion>2.9.2.1</LifecyclePackageVersion>
+    <LifecycleServicePackageVersion>2.9.2.1</LifecycleServicePackageVersion>
+    <RoomPackageVersion>2.6.1.11</RoomPackageVersion>
+    <ActivityPackageVersion>1.10.1.3</ActivityPackageVersion>
+    <BrowserPackageVersion>1.8.0.11</BrowserPackageVersion>
+    <AndroidCorePackageVersion>1.16.0.3</AndroidCorePackageVersion>
+    <AppCompatPackageVersion>1.7.1.1</AppCompatPackageVersion>
+    <MaterialPackageVersion>1.12.0.5</MaterialPackageVersion>
+    <InstallReferrerPackageVersion>2.2.0.9</InstallReferrerPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageVersion Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+
+    <PackageVersion Include="Xamarin.Kotlin.StdLib" Version="$(KotlinPackageVersion)" />
+    <PackageVersion Include="Xamarin.Kotlin.StdLib.Jdk8" Version="$(KotlinJdk8PackageVersion)" />
+    <PackageVersion Include="Xamarin.Kotlin.StdLib.Common" Version="$(KotlinCommonPackageVersion)" />
+    <PackageVersion Include="Xamarin.KotlinX.Coroutines.Core" Version="$(CoroutinesPackageVersion)" />
+    <PackageVersion Include="Xamarin.KotlinX.Coroutines.Android" Version="$(CoroutinesPackageVersion)" />
+    <PackageVersion Include="Xamarin.KotlinX.Coroutines.Guava" Version="$(CoroutinesPackageVersion)" />
+    <PackageVersion Include="Xamarin.KotlinX.Serialization.Core.Jvm" Version="$(SerializationCoreJvmPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Work.Runtime" Version="$(WorkRuntimePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Work.Work.Runtime.Ktx" Version="$(WorkRuntimePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Lifecycle.Process" Version="$(LifecyclePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Lifecycle.Runtime.Ktx" Version="$(LifecyclePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Lifecycle.Service" Version="$(LifecycleServicePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Room.Runtime" Version="$(RoomPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Room.Room.Ktx" Version="$(RoomPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Activity" Version="$(ActivityPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Activity.Ktx" Version="$(ActivityPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Browser" Version="$(BrowserPackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Core" Version="$(AndroidCorePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.Core.Core.Ktx" Version="$(AndroidCorePackageVersion)" />
+    <PackageVersion Include="Xamarin.AndroidX.AppCompat" Version="$(AppCompatPackageVersion)" />
+    <PackageVersion Include="Xamarin.Google.Android.Material" Version="$(MaterialPackageVersion)" />
+    <PackageVersion Include="Xamarin.Google.Android.InstallReferrer" Version="$(InstallReferrerPackageVersion)" />
 
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
