@@ -1,0 +1,34 @@
+// Generated from superwall-android resources; .NET Android AABs drop jar java-resources.
+package com.superwall.extra;
+
+import java.util.ListResourceBundle;
+
+public class wordbased_it extends ListResourceBundle {
+    @Override
+    protected Object[][] getContents() {
+        return new Object[][] {
+            {"WordBased.space", " "},
+            {"WordBased.comma", ","},
+            {"WordBased.commandand", ",e"},
+            {"WordBased.commaspaceand", ", e"},
+            {"WordBased.commaspace", ", "},
+            {"WordBased.spaceandspace", " e "},
+            {"WordBased.year", " anno"},
+            {"WordBased.years", " anni"},
+            {"WordBased.month", " mese"},
+            {"WordBased.months", " mesi"},
+            {"WordBased.week", " settimana"},
+            {"WordBased.weeks", " settimane"},
+            {"WordBased.day", " giorno"},
+            {"WordBased.days", " giorni"},
+            {"WordBased.hour", " ora"},
+            {"WordBased.hours", " ore"},
+            {"WordBased.minute", " minuto"},
+            {"WordBased.minutes", " minuti"},
+            {"WordBased.second", " secondo"},
+            {"WordBased.seconds", " secondi"},
+            {"WordBased.millisecond", " millisecondo"},
+            {"WordBased.milliseconds", " millisecondi"}
+        };
+    }
+}

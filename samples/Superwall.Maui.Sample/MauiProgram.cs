@@ -34,6 +34,9 @@ public static class MauiProgram
 #if ANDROID && DEBUG
 				o.TestModeBehavior = SuperwallTestModeBehavior.Always;
 #endif
+#if IOS && DEBUG
+				o.TestModeBehavior = SuperwallTestModeBehavior.Never;
+#endif
 			});
 		}
 
