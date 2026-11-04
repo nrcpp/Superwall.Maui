@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 
 namespace Superwall.Maui.Sample;
 
@@ -38,6 +39,41 @@ public static class MauiProgram
 				o.TestModeBehavior = SuperwallTestModeBehavior.Never;
 #endif
 			});
+
+			// Paywall previews from the dashboard and deepLink_open triggers (URL scheme camity-sw).
+			builder.ConfigureLifecycleEvents(events =>
+			{
+#if IOS
+				events.AddiOS(ios => ios
+					.SceneWillConnect((_, _, options) =>
+					{
+						// Null when the scene is not opened by a URL, despite the non-nullable binding.
+						if (options.UrlContexts is not { } contexts)
+						{
+							return;
+						}
+
+						foreach (var context in contexts)
+						{
+							HandleDeepLink(context.Url.AbsoluteString);
+						}
+					})
+					.SceneOpenUrl((_, contexts) =>
+					{
+						var handled = false;
+						foreach (var context in contexts)
+						{
+							handled |= HandleDeepLink(context.Url.AbsoluteString);
+						}
+
+						return handled;
+					}));
+#elif ANDROID
+				events.AddAndroid(android => android
+					.OnCreate((activity, _) => HandleDeepLink(activity.Intent?.DataString))
+					.OnNewIntent((_, intent) => HandleDeepLink(intent?.DataString)));
+#endif
+			});
 		}
 
 #if DEBUG
@@ -45,5 +81,17 @@ public static class MauiProgram
 #endif
 
 		return builder.Build();
+	}
+
+	private static bool HandleDeepLink(string? url)
+	{
+		if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+		{
+			return false;
+		}
+
+		var handled = IPlatformApplication.Current?.Services.GetService<ISuperwall>()?.HandleDeepLink(uri) ?? false;
+		Console.WriteLine($"[SuperwallSample] deep link {uri} handled={handled}");
+		return handled;
 	}
 }

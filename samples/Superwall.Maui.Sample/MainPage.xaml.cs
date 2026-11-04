@@ -27,6 +27,15 @@ public partial class MainPage : ContentPage
 		}
 
 		_superwall.EventReceived += (_, e) => Log($"event: {e.Name}");
+		_superwall.PaywallWillPresent += (_, info) => Log($"delegate: willPresent {info.Identifier}");
+		_superwall.PaywallDidPresent += (_, info) => Log($"delegate: didPresent {info.Identifier}; IsPaywallPresented={_superwall.IsPaywallPresented}");
+		_superwall.PaywallWillDismiss += (_, info) => Log($"delegate: willDismiss {info.Identifier}");
+		_superwall.PaywallDidDismiss += (_, info) => Log($"delegate: didDismiss {info.Identifier}");
+		_superwall.CustomPaywallAction += (_, name) => Log($"delegate: customAction {name}");
+		_superwall.PaywallWillOpenUrl += (_, url) => Log($"delegate: willOpenUrl {url}");
+		_superwall.PaywallWillOpenDeepLink += (_, url) => Log($"delegate: willOpenDeepLink {url}");
+		_superwall.SubscriptionStatusChanged += (_, status) =>
+			Log($"delegate: status changed {status.Status}; [{string.Join(", ", status.ActiveEntitlementIds)}]");
 		UpdateStatus();
 	}
 
@@ -106,6 +115,79 @@ public partial class MainPage : ContentPage
 		}
 	}
 
+	private async void OnPresentationResultClicked(object? sender, EventArgs e)
+	{
+		if (_superwall is null)
+		{
+			return;
+		}
+
+		var placement = PlacementEntry.Text?.Trim() ?? string.Empty;
+		try
+		{
+			var result = await _superwall.GetPresentationResultAsync(placement);
+			Log($"presentation result for {placement}: {result}");
+		}
+		catch (Exception ex)
+		{
+			Log($"presentation result failed: {ex.Message}");
+		}
+	}
+
+	private void OnPreloadClicked(object? sender, EventArgs e) => Run("preload", () =>
+	{
+		var placement = PlacementEntry.Text?.Trim() ?? string.Empty;
+		_superwall!.PreloadPaywalls([placement]);
+		Log($"preload requested for {placement}");
+	});
+
+	private void OnIdentifyClicked(object? sender, EventArgs e) => Run("identify", () =>
+	{
+		var userId = UserIdEntry.Text?.Trim() ?? string.Empty;
+		_superwall!.Identify(userId);
+		Log($"identify: {userId}");
+	});
+
+	private void OnResetClicked(object? sender, EventArgs e) => Run("reset", () =>
+	{
+		_superwall!.Reset();
+		Log("reset");
+	});
+
+	private void OnSetAttributesClicked(object? sender, EventArgs e) => Run("set attributes", () =>
+	{
+		_superwall!.SetUserAttributes(new Dictionary<string, object?>
+		{
+			["sample_plan"] = "tester",
+			["sample_launches"] = 3,
+			["sample_beta"] = true,
+		});
+		Log("attributes set");
+	});
+
+	private void OnGetAttributesClicked(object? sender, EventArgs e) => Run("get attributes", () =>
+	{
+		var attributes = _superwall!.GetUserAttributes();
+		Log($"attributes: {string.Join(", ", attributes.Select(a => $"{a.Key}={a.Value ?? "null"}"))}");
+	});
+
+	private void Run(string action, Action body)
+	{
+		if (_superwall is null)
+		{
+			return;
+		}
+
+		try
+		{
+			body();
+		}
+		catch (Exception ex)
+		{
+			Log($"{action} failed: {ex.Message}");
+		}
+	}
+
 	private async void DismissLater()
 	{
 		await Task.Delay(TimeSpan.FromSeconds(5));
@@ -132,7 +214,7 @@ public partial class MainPage : ContentPage
 	}
 
 	private void UpdateStatus() =>
-		StatusLabel.Text = $"IsConfigured: {_superwall?.IsConfigured}";
+		StatusLabel.Text = $"IsConfigured: {_superwall?.IsConfigured}; UserId: {_superwall?.UserId}; LoggedIn: {_superwall?.IsLoggedIn}";
 
 	private void Log(string message)
 	{
