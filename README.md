@@ -1,6 +1,13 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nrcpp/Superwall.Maui/main/assets/icon.png" alt="Superwall.Maui" width="160" />
+</p>
+
 # Superwall.Maui
 
-Unofficial .NET MAUI bridge to the official [Superwall](https://superwall.com) SDKs for iOS and Android. It is not affiliated with Superwall.
+[![NuGet](https://img.shields.io/nuget/vpre/Superwall.Maui.svg)](https://www.nuget.org/packages/Superwall.Maui)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nrcpp/Superwall.Maui/blob/main/LICENSE)
+
+Unofficial .NET MAUI bridge to the official [Superwall](https://superwall.com) SDKs for iOS and Android. It is not affiliated with Superwall. Source, issues and changelog: [github.com/nrcpp/Superwall.Maui](https://github.com/nrcpp/Superwall.Maui).
 
 The package wraps the native SDKs and does not reimplement them. Paywalls, purchases, restore, audiences and analytics all run inside the native SDKs:
 
