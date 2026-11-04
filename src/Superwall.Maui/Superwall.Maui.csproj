@@ -14,12 +14,25 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
 
     <PackageId>Superwall.Maui</PackageId>
-    <Version>0.1.0-alpha</Version>
-    <Authors>Superwall.Maui contributors</Authors>
-    <Description>.NET MAUI bridge to the official Superwall SDKs (SuperwallKit $(SuperwallIosVersion), superwall-android $(SuperwallAndroidVersion)).</Description>
+    <Version>1.0.0-preview.1</Version>
+    <Authors>Denys Kazakov</Authors>
+    <Description>Unofficial .NET MAUI bridge to the official Superwall SDKs (SuperwallKit $(SuperwallIosVersion), superwall-android $(SuperwallAndroidVersion)) for iOS and Android: remote paywalls, purchases and restore, subscription status, user identity and attributes, paywall delegate events and deep links. Not affiliated with Superwall.</Description>
+    <Copyright>Copyright (c) 2026 Denys Kazakov</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>superwall;paywall;maui;ios;android;subscriptions</PackageTags>
+    <PackageTags>superwall;paywall;maui;ios;android;subscriptions;in-app-purchase;monetization</PackageTags>
+    <PackageProjectUrl>https://github.com/nrcpp/Superwall.Maui</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nrcpp/Superwall.Maui.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>See https://github.com/nrcpp/Superwall.Maui/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Superwall.Maui.Tests" />

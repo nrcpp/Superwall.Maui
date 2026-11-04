@@ -9,5 +9,6 @@
     <SuperwallIosVersion>4.18.3</SuperwallIosVersion>
     <SuperwallAndroidVersion>2.9.0</SuperwallAndroidVersion>
 
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 </Project>
