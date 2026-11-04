@@ -21,6 +21,9 @@ namespace Superwall.Maui.Platforms.iOS.Native
         [NullAllowed, Export("eventListener", ArgumentSemantic.Strong)]
         ISWMEventListener EventListener { get; set; }
 
+        [NullAllowed, Export("delegateListener", ArgumentSemantic.Strong)]
+        ISWMDelegateListener DelegateListener { get; set; }
+
         [Export("configureWithApiKey:optionsJson:completion:")]
         void Configure(string apiKey, [NullAllowed] string optionsJson, Action<bool, NSString> completion);
 
@@ -35,6 +38,42 @@ namespace Superwall.Maui.Platforms.iOS.Native
 
         [Export("restorePurchasesWithCompletion:")]
         void RestorePurchases(Action<NSString> completion);
+
+        [Export("identifyWithUserId:restorePaywallAssignments:")]
+        void Identify(string userId, bool restorePaywallAssignments);
+
+        [Export("reset")]
+        void Reset();
+
+        [NullAllowed, Export("userId")]
+        string UserId { get; }
+
+        [Export("isLoggedIn")]
+        bool IsLoggedIn { get; }
+
+        [Export("setUserAttributesWithJson:")]
+        void SetUserAttributes(string json);
+
+        [Export("getUserAttributesJson")]
+        string GetUserAttributesJson();
+
+        [Export("getPresentationResultWithPlacement:paramsJson:completion:")]
+        void GetPresentationResult(string placement, [NullAllowed] string paramsJson, Action<NSString> completion);
+
+        [Export("preloadAllPaywalls")]
+        void PreloadAllPaywalls();
+
+        [Export("preloadPaywallsWithPlacementsJson:")]
+        void PreloadPaywalls(string placementsJson);
+
+        [Export("isPaywallPresented")]
+        bool IsPaywallPresented { get; }
+
+        [Export("handleDeepLinkWithUrl:")]
+        bool HandleDeepLink(string url);
+
+        [Export("setLogLevel:")]
+        void SetLogLevel(string level);
     }
 
     interface ISWMPresentationListener { }
@@ -75,5 +114,17 @@ namespace Superwall.Maui.Platforms.iOS.Native
         [Abstract]
         [Export("onEvent:")]
         void OnEvent(string eventJson);
+    }
+
+    interface ISWMDelegateListener { }
+
+    [Internal]
+    [Protocol(Name = "SWMDelegateListener")]
+    [BaseType(typeof(NSObject))]
+    interface SWMDelegateListener
+    {
+        [Abstract]
+        [Export("onDelegateEvent:payloadJson:")]
+        void OnDelegateEvent(string kind, string payloadJson);
     }
 }

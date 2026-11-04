@@ -10,12 +10,15 @@ internal sealed partial class SuperwallService
     // Native code also retains listeners; these references keep the managed peers alive until a terminal callback.
     private readonly HashSet<PresentationListener> _activeListeners = [];
     private EventListener? _eventListener;
+    private DelegateListener? _delegateListener;
 
     private partial void PlatformConfigure(object? application)
     {
         _eventListener = new EventListener(this);
+        _delegateListener = new DelegateListener(this);
         var bridge = SWMBridge.Shared;
         bridge.EventListener = _eventListener;
+        bridge.DelegateListener = _delegateListener;
         bridge.Configure(
             _options.GetApiKeyForCurrentPlatform()!,
             BridgeJson.SerializeOptions(_options),
@@ -67,6 +70,46 @@ internal sealed partial class SuperwallService
         });
         return tcs.Task;
     }
+
+    private partial void PlatformIdentify(string userId, bool restorePaywallAssignments) =>
+        SWMBridge.Shared.Identify(userId, restorePaywallAssignments);
+
+    private partial void PlatformReset() => SWMBridge.Shared.Reset();
+
+    private partial string? PlatformGetUserId() => SWMBridge.Shared.UserId;
+
+    private partial bool PlatformIsLoggedIn() => SWMBridge.Shared.IsLoggedIn;
+
+    private partial void PlatformSetUserAttributes(string attributesJson) => SWMBridge.Shared.SetUserAttributes(attributesJson);
+
+    private partial string PlatformGetUserAttributesJson() => SWMBridge.Shared.GetUserAttributesJson();
+
+    private partial Task<PresentationResult> PlatformGetPresentationResultAsync(string placement, string? paramsJson)
+    {
+        var tcs = new TaskCompletionSource<PresentationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SWMBridge.Shared.GetPresentationResult(placement, paramsJson, json =>
+        {
+            try
+            {
+                tcs.TrySetResult(BridgeJson.ParsePresentationResult(json));
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                tcs.TrySetException(ex);
+            }
+        });
+        return tcs.Task;
+    }
+
+    private partial void PlatformPreloadAllPaywalls() => SWMBridge.Shared.PreloadAllPaywalls();
+
+    private partial void PlatformPreloadPaywalls(string placementsJson) => SWMBridge.Shared.PreloadPaywalls(placementsJson);
+
+    private partial bool PlatformIsPaywallPresented() => SWMBridge.Shared.IsPaywallPresented;
+
+    private partial bool PlatformHandleDeepLink(string url) => SWMBridge.Shared.HandleDeepLink(url);
+
+    private partial void PlatformSetLogLevel(string level) => SWMBridge.Shared.SetLogLevel(level);
 
     private void Release(PresentationListener listener)
     {
@@ -151,5 +194,11 @@ internal sealed partial class SuperwallService
 
             owner.RaiseEvent(info);
         }
+    }
+
+    private sealed class DelegateListener(SuperwallService owner) : NSObject, ISWMDelegateListener
+    {
+        [Export("onDelegateEvent:payloadJson:")]
+        public void OnDelegateEvent(string kind, string payloadJson) => owner.HandleDelegateEvent(kind, payloadJson);
     }
 }

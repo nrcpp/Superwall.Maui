@@ -118,4 +118,111 @@ public class BridgeJsonTests
         Assert.Null(BridgeJson.SerializeParams(null));
         Assert.Throws<ArgumentException>(() => BridgeJson.SerializeParams(new Dictionary<string, object> { ["x"] = new object() }));
     }
+
+    [Fact]
+    public void Options_SerializeOptionalFields_OnlyWhenSet()
+    {
+        var options = new SuperwallOptions
+        {
+            LocaleIdentifier = "en_GB",
+            EventTrackingBehavior = SuperwallEventTrackingBehavior.SuperwallOnly,
+        };
+        options.Paywalls.ShouldPreload = false;
+        options.Paywalls.AutomaticallyDismiss = true;
+
+        Assert.Equal(
+            """{"logLevel":"warn","testModeBehavior":"automatic","localeIdentifier":"en_GB","eventTrackingBehavior":"superwallOnly","paywalls":{"shouldPreload":false,"automaticallyDismiss":true}}""",
+            BridgeJson.SerializeOptions(options));
+    }
+
+    [Theory]
+    [InlineData("willPresentPaywall")]
+    [InlineData("didPresentPaywall")]
+    [InlineData("willDismissPaywall")]
+    [InlineData("didDismissPaywall")]
+    public void Delegate_PaywallKinds_ParsePaywallInfo(string kind)
+    {
+        var payload = BridgeJson.ParseDelegatePayload(kind, """{"identifier":"pw_1","name":"Main","url":"https://x","productIds":[]}""");
+
+        Assert.Equal("pw_1", Assert.IsType<PaywallInfo>(payload).Identifier);
+    }
+
+    [Fact]
+    public void Delegate_CustomAction_ParsesName() =>
+        Assert.Equal("open_help", BridgeJson.ParseDelegatePayload("customPaywallAction", """{"name":"open_help"}"""));
+
+    [Theory]
+    [InlineData("paywallWillOpenUrl", "https://superwall.com/terms")]
+    [InlineData("paywallWillOpenDeepLink", "camity://settings")]
+    public void Delegate_UrlKinds_ParseUri(string kind, string url)
+    {
+        var payload = BridgeJson.ParseDelegatePayload(kind, $$"""{"url":"{{url}}"}""");
+
+        Assert.Equal(new Uri(url), Assert.IsType<Uri>(payload));
+    }
+
+    [Fact]
+    public void Delegate_SubscriptionStatus_ParsesNewStatus()
+    {
+        var payload = BridgeJson.ParseDelegatePayload("subscriptionStatusDidChange", """{"status":"active","activeEntitlementIds":["pro"]}""");
+
+        var status = Assert.IsType<SubscriptionStatusInfo>(payload);
+        Assert.Equal(SuperwallSubscriptionState.Active, status.Status);
+        Assert.Equal(["pro"], status.ActiveEntitlementIds);
+    }
+
+    [Fact]
+    public void Delegate_UnknownKind_IsIgnored() =>
+        Assert.Null(BridgeJson.ParseDelegatePayload("somethingNew", """{"x":1}"""));
+
+    [Fact]
+    public void UserAttributes_SerializeWithNullAsRemoval()
+    {
+        var json = BridgeJson.SerializeUserAttributes(new Dictionary<string, object?> { ["plan"] = "pro", ["age"] = 30, ["beta"] = true, ["old"] = null });
+
+        Assert.Equal("""{"plan":"pro","age":30,"beta":true,"old":null}""", json);
+        Assert.Throws<ArgumentException>(() => BridgeJson.SerializeUserAttributes(new Dictionary<string, object?> { ["x"] = new object() }));
+    }
+
+    [Fact]
+    public void UserAttributes_ParsePrimitives()
+    {
+        var attributes = BridgeJson.ParseUserAttributes(
+            """{"plan":"pro","age":30,"score":1.5,"beta":true,"gone":null,"applicationInstalledAt":"2026-11-04T10:00:00Z"}""");
+
+        Assert.Equal("pro", attributes["plan"]);
+        Assert.Equal(30L, attributes["age"]);
+        Assert.Equal(1.5, attributes["score"]);
+        Assert.Equal(true, attributes["beta"]);
+        Assert.Null(attributes["gone"]);
+        Assert.Equal("2026-11-04T10:00:00Z", attributes["applicationInstalledAt"]);
+    }
+
+    [Fact]
+    public void PresentationResult_MapsAllTypes()
+    {
+        Assert.IsType<PresentationResult.PlacementNotFound>(BridgeJson.ParsePresentationResult("""{"type":"placementNotFound"}"""));
+        Assert.IsType<PresentationResult.NoAudienceMatch>(BridgeJson.ParsePresentationResult("""{"type":"noAudienceMatch"}"""));
+        Assert.IsType<PresentationResult.PaywallNotAvailable>(BridgeJson.ParsePresentationResult("""{"type":"paywallNotAvailable"}"""));
+        Assert.Equal(
+            new PresentationResult.Paywall(new Experiment("e1", "g1", "v1", "pw_1")),
+            BridgeJson.ParsePresentationResult("""{"type":"paywall","experiment":{"id":"e1","groupId":"g1","variantId":"v1","paywallId":"pw_1"}}"""));
+        Assert.Equal(
+            new PresentationResult.Holdout(new Experiment("e1", "g1", "v2", null)),
+            BridgeJson.ParsePresentationResult("""{"type":"holdout","experiment":{"id":"e1","groupId":"g1","variantId":"v2","paywallId":null}}"""));
+        Assert.Throws<JsonException>(() => BridgeJson.ParsePresentationResult("""{"type":"other"}"""));
+    }
+
+    [Fact]
+    public void PresentationResult_Error_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            BridgeJson.ParsePresentationResult("""{"type":"error","error":"Superwall is not configured"}"""));
+
+        Assert.Equal("Superwall is not configured", ex.Message);
+    }
+
+    [Fact]
+    public void Placements_SerializeAsArray() =>
+        Assert.Equal("""["a","b"]""", BridgeJson.SerializePlacements(["a", "b"]));
 }

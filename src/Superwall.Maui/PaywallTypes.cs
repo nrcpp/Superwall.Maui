@@ -58,3 +58,29 @@ public sealed record SubscriptionStatusInfo(
     IReadOnlyList<string> ActiveEntitlementIds);
 
 public sealed record RestorePurchasesResult(bool WasSuccessful, string? Error);
+
+/// <summary>What registering a placement would do right now, without presenting anything.</summary>
+public abstract record PresentationResult
+{
+    private PresentationResult()
+    {
+    }
+
+    /// <summary>The placement is not in any campaign on the dashboard.</summary>
+    public sealed record PlacementNotFound : PresentationResult;
+
+    /// <summary>No audience matched, so no paywall would be shown.</summary>
+    public sealed record NoAudienceMatch : PresentationResult;
+
+    /// <summary>An audience matched and the user would see a paywall.</summary>
+    public sealed record Paywall(Experiment Experiment) : PresentationResult;
+
+    /// <summary>An audience matched but the user is in a holdout group.</summary>
+    public sealed record Holdout(Experiment Experiment) : PresentationResult;
+
+    /// <summary>The paywall can't be shown now (e.g. no network, nothing to present from, or already presented).</summary>
+    public sealed record PaywallNotAvailable : PresentationResult;
+}
+
+/// <summary>Campaign experiment the user was assigned to.</summary>
+public sealed record Experiment(string Id, string GroupId, string VariantId, string? PaywallId);

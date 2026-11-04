@@ -8,6 +8,17 @@ internal sealed class OptionsDto
 {
     public string LogLevel { get; set; } = "warn";
     public string TestModeBehavior { get; set; } = "automatic";
+    public string? LocaleIdentifier { get; set; }
+    public string? EventTrackingBehavior { get; set; }
+    public PaywallOptionsDto? Paywalls { get; set; }
+}
+
+internal sealed class PaywallOptionsDto
+{
+    public bool? IsHapticFeedbackEnabled { get; set; }
+    public bool? ShouldShowPurchaseFailureAlert { get; set; }
+    public bool? ShouldPreload { get; set; }
+    public bool? AutomaticallyDismiss { get; set; }
 }
 
 internal sealed class PaywallInfoDto
@@ -48,6 +59,31 @@ internal sealed class RestorePurchasesResultDto
     public string? Error { get; set; }
 }
 
+internal sealed class PresentationResultDto
+{
+    public string? Type { get; set; }
+    public ExperimentDto? Experiment { get; set; }
+    public string? Error { get; set; }
+}
+
+internal sealed class ExperimentDto
+{
+    public string? Id { get; set; }
+    public string? GroupId { get; set; }
+    public string? VariantId { get; set; }
+    public string? PaywallId { get; set; }
+}
+
+internal sealed class CustomActionDto
+{
+    public string? Name { get; set; }
+}
+
+internal sealed class UrlDto
+{
+    public string? Url { get; set; }
+}
+
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
@@ -58,6 +94,10 @@ internal sealed class RestorePurchasesResultDto
 [JsonSerializable(typeof(EventDto))]
 [JsonSerializable(typeof(SubscriptionStatusDto))]
 [JsonSerializable(typeof(RestorePurchasesResultDto))]
+[JsonSerializable(typeof(PresentationResultDto))]
+[JsonSerializable(typeof(CustomActionDto))]
+[JsonSerializable(typeof(UrlDto))]
+[JsonSerializable(typeof(string[]))]
 internal sealed partial class BridgeJsonContext : JsonSerializerContext
 {
 }

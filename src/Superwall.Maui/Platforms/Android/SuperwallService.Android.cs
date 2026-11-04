@@ -10,7 +10,9 @@ internal sealed partial class SuperwallService
     private readonly HashSet<PresentationListener> _activeListeners = [];
     private readonly HashSet<DismissCallback> _activeDismissCallbacks = [];
     private readonly HashSet<RestoreCallback> _activeRestoreCallbacks = [];
+    private readonly HashSet<PresentationResultCallback> _activePresentationResultCallbacks = [];
     private EventListener? _eventListener;
+    private DelegateListener? _delegateListener;
     private ActivityProvider? _activityProvider;
 
     private partial void PlatformConfigure(object? application)
@@ -21,8 +23,10 @@ internal sealed partial class SuperwallService
         }
 
         _eventListener = new EventListener(this);
+        _delegateListener = new DelegateListener(this);
         _activityProvider = new ActivityProvider();
         SuperwallMauiBridge.SetEventListener(_eventListener);
+        SuperwallMauiBridge.SetDelegateListener(_delegateListener);
         SuperwallMauiBridge.Configure(
             androidApplication,
             _options.GetApiKeyForCurrentPlatform()!,
@@ -72,6 +76,42 @@ internal sealed partial class SuperwallService
         return tcs.Task;
     }
 
+    private partial void PlatformIdentify(string userId, bool restorePaywallAssignments) =>
+        SuperwallMauiBridge.Identify(userId, restorePaywallAssignments);
+
+    private partial void PlatformReset() => SuperwallMauiBridge.Reset();
+
+    private partial string? PlatformGetUserId() => SuperwallMauiBridge.UserId;
+
+    private partial bool PlatformIsLoggedIn() => SuperwallMauiBridge.IsLoggedIn;
+
+    private partial void PlatformSetUserAttributes(string attributesJson) => SuperwallMauiBridge.SetUserAttributes(attributesJson);
+
+    private partial string PlatformGetUserAttributesJson() => SuperwallMauiBridge.UserAttributesJson;
+
+    private partial Task<PresentationResult> PlatformGetPresentationResultAsync(string placement, string? paramsJson)
+    {
+        var tcs = new TaskCompletionSource<PresentationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callback = new PresentationResultCallback(this, tcs);
+        lock (_activePresentationResultCallbacks)
+        {
+            _activePresentationResultCallbacks.Add(callback);
+        }
+
+        SuperwallMauiBridge.GetPresentationResult(placement, paramsJson, callback);
+        return tcs.Task;
+    }
+
+    private partial void PlatformPreloadAllPaywalls() => SuperwallMauiBridge.PreloadAllPaywalls();
+
+    private partial void PlatformPreloadPaywalls(string placementsJson) => SuperwallMauiBridge.PreloadPaywalls(placementsJson);
+
+    private partial bool PlatformIsPaywallPresented() => SuperwallMauiBridge.IsPaywallPresented;
+
+    private partial bool PlatformHandleDeepLink(string url) => SuperwallMauiBridge.HandleDeepLink(url);
+
+    private partial void PlatformSetLogLevel(string level) => SuperwallMauiBridge.SetLogLevel(level);
+
     private void Release(PresentationListener listener)
     {
         lock (_activeListeners)
@@ -94,6 +134,37 @@ internal sealed partial class SuperwallService
         {
             _activeRestoreCallbacks.Remove(callback);
         }
+    }
+
+    private void Release(PresentationResultCallback callback)
+    {
+        lock (_activePresentationResultCallbacks)
+        {
+            _activePresentationResultCallbacks.Remove(callback);
+        }
+    }
+
+    private sealed class PresentationResultCallback(SuperwallService owner, TaskCompletionSource<PresentationResult> completion)
+        : Java.Lang.Object, IJsonCallback
+    {
+        public void OnComplete(string json)
+        {
+            owner.Release(this);
+            try
+            {
+                var result = BridgeJson.ParsePresentationResult(json);
+                RunOnMainThread(() => completion.TrySetResult(result));
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                RunOnMainThread(() => completion.TrySetException(ex));
+            }
+        }
+    }
+
+    private sealed class DelegateListener(SuperwallService owner) : Java.Lang.Object, IDelegateListener
+    {
+        public void OnDelegateEvent(string kind, string payloadJson) => owner.HandleDelegateEvent(kind, payloadJson);
     }
 
     private sealed class ActivityProvider : Java.Lang.Object, IActivityProviderCallback
