@@ -286,14 +286,15 @@ object SuperwallMauiBridge {
         }
 
         val status = Superwall.instance.subscriptionStatus.value
+        // Entitlement.isActive is not reliably set inside Active; membership in Active is what counts.
         val activeIds = when (status) {
-            is SubscriptionStatus.Active -> status.entitlements.filter { it.isActive }.map { it.id }.sorted()
+            is SubscriptionStatus.Active -> status.entitlements.map { it.id }.sorted()
             else -> emptyList()
         }
-        val state = when {
-            status is SubscriptionStatus.Unknown -> "unknown"
-            activeIds.isNotEmpty() -> "active"
-            else -> "inactive"
+        val state = when (status) {
+            is SubscriptionStatus.Unknown -> "unknown"
+            is SubscriptionStatus.Active -> "active"
+            is SubscriptionStatus.Inactive -> "inactive"
         }
         return JSONObject().put("status", state).put("activeEntitlementIds", JSONArray(activeIds)).toString()
     }
