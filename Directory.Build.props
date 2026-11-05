@@ -6,7 +6,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
     <!-- Native SDK versions: keep in sync with native/ios/project.yml and native/android/gradle/libs.versions.toml -->
-    <SuperwallIosVersion>4.18.3</SuperwallIosVersion>
+    <SuperwallIosVersion>4.19.0</SuperwallIosVersion>
     <SuperwallAndroidVersion>2.9.0</SuperwallAndroidVersion>
 
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
