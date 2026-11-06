@@ -13,7 +13,7 @@ The package wraps the native SDKs and does not reimplement them. Paywalls, purch
 
 | Platform | Native SDK | Minimum OS |
 |---|---|---|
-| iOS | SuperwallKit 4.19.0 | iOS 15.0 |
+| iOS | SuperwallKit 4.19.1 | iOS 15.0 |
 | Android | superwall-android 2.9.0 | Android 6.0 (API 23) |
 
 Requirements: .NET 10 SDK with the `maui-ios` / `maui-android` workloads (MAUI 10.0.110 or later). For iOS, use the Xcode version your .NET iOS workload requires.
