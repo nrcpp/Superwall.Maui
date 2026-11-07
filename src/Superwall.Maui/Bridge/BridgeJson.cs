@@ -81,6 +81,55 @@ internal static class BridgeJson
     public static string SerializePlacements(IEnumerable<string> placements) =>
         JsonSerializer.Serialize(placements.ToArray(), BridgeJsonContext.Default.StringArray);
 
+    public static string SerializeProductIds(IEnumerable<string> productIds) =>
+        JsonSerializer.Serialize(productIds.ToArray(), BridgeJsonContext.Default.StringArray);
+
+    public static IReadOnlyList<StoreProductInfo> ParseStoreProducts(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.StoreProductsResultDto)
+            ?? throw new JsonException("store products response is null");
+        if (dto.Error is not null)
+        {
+            throw new InvalidOperationException(dto.Error);
+        }
+
+        return (dto.Products ?? []).Select(product => new StoreProductInfo(
+            product.ProductId ?? string.Empty,
+            product.Price,
+            product.LocalizedPrice ?? string.Empty,
+            product.CurrencyCode,
+            product.CurrencySymbol)).ToArray();
+    }
+
+    public static StorePurchaseResult ParseStorePurchaseResult(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.StorePurchaseResultDto)
+            ?? throw new JsonException("store purchase response is null");
+        var status = dto.Status switch
+        {
+            "purchased" => StorePurchaseStatus.Purchased,
+            "canceled" => StorePurchaseStatus.Canceled,
+            "pending" => StorePurchaseStatus.Pending,
+            "failed" => StorePurchaseStatus.Failed,
+            _ => throw new JsonException($"Unknown store purchase status '{dto.Status}'"),
+        };
+        return new StorePurchaseResult(status, dto.Error);
+    }
+
+    public static StoreConsumeResult ParseStoreConsumeResult(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.StoreConsumeResultDto)
+            ?? throw new JsonException("store consume response is null");
+        var status = dto.Status switch
+        {
+            "consumed" => StoreConsumeStatus.Consumed,
+            "notSupported" => StoreConsumeStatus.NotSupported,
+            "failed" => StoreConsumeStatus.Failed,
+            _ => throw new JsonException($"Unknown store consume status '{dto.Status}'"),
+        };
+        return new StoreConsumeResult(status, dto.Error);
+    }
+
     public static PresentationResult ParsePresentationResult(string json)
     {
         var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.PresentationResultDto)
@@ -155,8 +204,28 @@ internal static class BridgeJson
             ?? throw new JsonException("eventJson is null");
         return new SuperwallEventInfo(
             dto.Name ?? string.Empty,
-            dto.Params ?? new Dictionary<string, string?>());
+            dto.Params ?? new Dictionary<string, string?>())
+        {
+            Transaction = ToPurchaseTransaction(dto),
+        };
     }
+
+    public static PurchaseTransactionInfo? ParsePurchaseTransaction(string json)
+    {
+        var dto = JsonSerializer.Deserialize(json, BridgeJsonContext.Default.EventDto)
+            ?? throw new JsonException("eventJson is null");
+        return ToPurchaseTransaction(dto);
+    }
+
+    private static PurchaseTransactionInfo? ToPurchaseTransaction(EventDto dto) =>
+        dto.Name == "transaction_complete" && dto.Transaction is { } transaction
+            ? new PurchaseTransactionInfo(
+                transaction.ProductId ?? string.Empty,
+                transaction.TransactionId,
+                transaction.OriginalTransactionId,
+                transaction.PurchaseToken,
+                transaction.Signature)
+            : null;
 
     public static SubscriptionStatusInfo ParseSubscriptionStatus(string json)
     {

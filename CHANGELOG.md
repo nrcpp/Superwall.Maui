@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-preview.4
+
+Adds direct product lookup and purchase through the native Superwall SDKs, plus Android consumable token consumption. Purchase outcomes are typed; transaction IDs and Play purchase tokens are included with the existing transaction-complete event. Credits should be verified and granted by the app backend, without assigning a PRO entitlement.
+
 ## 1.0.0-preview.3
 
 Updates the iOS native dependency to SuperwallKit 4.19.1. Android remains on superwall-android 2.9.0. No public C# API or bridge-contract changes.

@@ -39,6 +39,12 @@ namespace Superwall.Maui.Platforms.iOS.Native
         [Export("restorePurchasesWithCompletion:")]
         void RestorePurchases(Action<NSString> completion);
 
+        [Export("getProductsWithProductIdsJson:completion:")]
+        void GetProducts(string productIdsJson, Action<NSString> completion);
+
+        [Export("purchaseProductWithId:completion:")]
+        void PurchaseProduct(string productId, Action<NSString> completion);
+
         [Export("identifyWithUserId:restorePaywallAssignments:")]
         void Identify(string userId, bool restorePaywallAssignments);
 

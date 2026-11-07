@@ -11,6 +11,7 @@ import com.superwall.sdk.config.options.EventTrackingBehavior
 import com.superwall.sdk.config.options.PaywallOptions
 import com.superwall.sdk.config.options.SuperwallOptions
 import com.superwall.sdk.delegate.RestorationResult
+import com.superwall.sdk.delegate.PurchaseResult as NativePurchaseResult
 import com.superwall.sdk.delegate.SuperwallDelegateJava
 import com.superwall.sdk.identity.IdentityOptions
 import com.superwall.sdk.identity.identify
@@ -21,6 +22,8 @@ import com.superwall.sdk.models.entitlements.SubscriptionStatus
 import com.superwall.sdk.models.triggers.Experiment
 import com.superwall.sdk.paywall.presentation.PaywallInfo
 import com.superwall.sdk.paywall.presentation.PaywallPresentationHandler
+import com.superwall.sdk.store.abstractions.product.StoreProduct
+import com.superwall.sdk.analytics.superwall.SuperwallEvent
 import com.superwall.sdk.paywall.presentation.dismiss
 import com.superwall.sdk.paywall.presentation.get_presentation_result.getPresentationResult
 import com.superwall.sdk.paywall.presentation.internal.state.PaywallResult
@@ -114,6 +117,15 @@ object SuperwallMauiBridge {
     fun restorePurchases(callback: RestorePurchasesCallback) = BridgeCore.restorePurchases(callback)
 
     @JvmStatic
+    fun getProducts(productIdsJson: String, callback: JsonCallback) = BridgeCore.getProducts(productIdsJson, callback)
+
+    @JvmStatic
+    fun purchase(productId: String, callback: JsonCallback) = BridgeCore.purchase(productId, callback)
+
+    @JvmStatic
+    fun consumePurchase(purchaseToken: String, callback: JsonCallback) = BridgeCore.consumePurchase(purchaseToken, callback)
+
+    @JvmStatic
     fun identify(userId: String, restorePaywallAssignments: Boolean) =
         BridgeCore.identify(userId, restorePaywallAssignments)
 
@@ -151,6 +163,7 @@ object SuperwallMauiBridge {
 
     @JvmStatic
     fun setLogLevel(level: String) = BridgeCore.setLogLevel(level)
+
 }
 
 // .NET class-parse resolves every non-private member of non-anonymous classes, even package-private ones.
@@ -268,6 +281,63 @@ private object BridgeCore {
                 onFailure = { error -> restoreResultJson(false, error.message) },
             )
             callback.onComplete(payload)
+        }
+    }
+
+    fun getProducts(productIdsJson: String, callback: JsonCallback) {
+        if (!configured) {
+            callback.onComplete(storeProductsError("Superwall is not configured"))
+            return
+        }
+
+        scope.launch {
+            runCatching {
+                val json = JSONArray(productIdsJson)
+                val productIds = (0 until json.length()).map { json.getString(it) }.distinct().toTypedArray()
+                Superwall.instance.getProducts(*productIds).getOrThrow()
+            }.fold(
+                onSuccess = { products ->
+                    val array = JSONArray()
+                    products.values.sortedBy { it.productIdentifier }.forEach { array.put(storeProductJson(it)) }
+                    callback.onComplete(JSONObject().put("products", array).toString())
+                },
+                onFailure = { error -> callback.onComplete(storeProductsError(error.message ?: "Unable to fetch products")) },
+            )
+        }
+    }
+
+    fun purchase(productId: String, callback: JsonCallback) {
+        if (!configured) {
+            callback.onComplete(storePurchaseResultJson(NativePurchaseResult.Failed("Superwall is not configured")))
+            return
+        }
+
+        scope.launch {
+            val result = runCatching { Superwall.instance.purchase(productId) }
+                .fold(
+                    onSuccess = { it },
+                    onFailure = { Result.failure(it) },
+                )
+            callback.onComplete(
+                result.fold(
+                    onSuccess = ::storePurchaseResultJson,
+                    onFailure = { error -> storePurchaseResultJson(NativePurchaseResult.Failed(error.message ?: "Purchase failed")) },
+                ),
+            )
+        }
+    }
+
+    fun consumePurchase(purchaseToken: String, callback: JsonCallback) {
+        if (!configured) {
+            callback.onComplete(storeConsumeResultJson("failed", "Superwall is not configured"))
+            return
+        }
+
+        scope.launch {
+            Superwall.instance.consume(purchaseToken).fold(
+                onSuccess = { token -> callback.onComplete(storeConsumeResultJson("consumed", token = token)) },
+                onFailure = { error -> callback.onComplete(storeConsumeResultJson("failed", error.message)) },
+            )
         }
     }
 
@@ -493,7 +563,53 @@ private object BridgeCore {
         val info = eventInfo as SuperwallEventInfo
         val params = JSONObject()
         info.params.forEach { (key, value) -> params.put(key, value?.toString() ?: JSONObject.NULL) }
-        return JSONObject().put("name", info.event.rawName).put("params", params).toString()
+        val payload = JSONObject().put("name", info.event.rawName).put("params", params)
+        val completed = info.event as? SuperwallEvent.TransactionComplete
+        completed?.let { event ->
+            val transaction = event.transaction
+            payload.put(
+                "transaction",
+                JSONObject()
+                    .put("productId", event.product.productIdentifier)
+                    .put("transactionId", transaction?.storeTransactionId ?: JSONObject.NULL)
+                    .put("originalTransactionId", transaction?.originalTransactionIdentifier ?: JSONObject.NULL)
+                    .put("purchaseToken", transaction?.purchaseToken ?: JSONObject.NULL)
+                    .put("signature", transaction?.signature ?: JSONObject.NULL),
+            )
+        }
+        return payload.toString()
+    }
+
+    fun storeProductJson(value: Any): JSONObject {
+        val product = value as StoreProduct
+        return JSONObject()
+            .put("productId", product.productIdentifier)
+            .put("price", product.price)
+            .put("localizedPrice", product.localizedPrice)
+            .put("currencyCode", product.currencyCode ?: JSONObject.NULL)
+            .put("currencySymbol", product.currencySymbol ?: JSONObject.NULL)
+    }
+
+    fun storeProductsError(message: String): String =
+        JSONObject().put("products", JSONArray()).put("error", message).toString()
+
+    fun storePurchaseResultJson(value: Any): String {
+        val json = JSONObject()
+        when (val result = value as NativePurchaseResult) {
+            is NativePurchaseResult.Purchased -> json.put("status", "purchased")
+            is NativePurchaseResult.Cancelled -> json.put("status", "canceled")
+            is NativePurchaseResult.Pending -> json.put("status", "pending")
+            is NativePurchaseResult.Failed -> json.put("status", "failed").put("error", result.errorMessage)
+        }
+        if (!json.has("error")) json.put("error", JSONObject.NULL)
+        return json.toString()
+    }
+
+    private fun storeConsumeResultJson(status: String, error: String? = null, token: String? = null): String {
+        val json = JSONObject().put("status", status)
+        error?.let { json.put("error", it) }
+        token?.let { json.put("purchaseToken", it) }
+        return json.toString()
     }
 
     fun subscriptionStatusJson(subscriptionStatus: Any): String {

@@ -150,6 +150,47 @@ public final class SWMBridge: NSObject {
     }
   }
 
+  @objc(getProductsWithProductIdsJson:completion:)
+  public func getProducts(productIdsJson: String, completion: @escaping (String) -> Void) {
+    onMain {
+      guard Superwall.isInitialized else {
+        completion(Self.storeProductsError("Superwall is not configured"))
+        return
+      }
+      guard let data = productIdsJson.data(using: .utf8),
+        let identifiers = try? JSONDecoder().decode([String].self, from: data)
+      else {
+        completion(Self.storeProductsError("Product IDs must be a JSON string array"))
+        return
+      }
+
+      Task { @MainActor in
+        let products = await Superwall.shared.products(for: Set(identifiers))
+        completion(Self.storeProductsJson(products))
+      }
+    }
+  }
+
+  @objc(purchaseProductWithId:completion:)
+  public func purchase(productId: String, completion: @escaping (String) -> Void) {
+    onMain {
+      guard Superwall.isInitialized else {
+        completion(Self.storePurchaseResultJson(.failed(NSError(domain: "Superwall.Maui", code: 1, userInfo: [NSLocalizedDescriptionKey: "Superwall is not configured"]))))
+        return
+      }
+
+      Task { @MainActor in
+        let products = await Superwall.shared.products(for: [productId])
+        guard let product = products.first(where: { $0.productIdentifier == productId }) else {
+          completion(Self.storePurchaseResultJson(.failed(NSError(domain: "Superwall.Maui", code: 2, userInfo: [NSLocalizedDescriptionKey: "Product '\(productId)' is not available in the App Store"]))))
+          return
+        }
+        let result = await Superwall.shared.purchase(product)
+        completion(Self.storePurchaseResultJson(result))
+      }
+    }
+  }
+
   // MARK: - User
 
   @objc public func identify(userId: String, restorePaywallAssignments: Bool) {
@@ -400,7 +441,44 @@ public final class SWMBridge: NSObject {
     for (key, value) in eventInfo.params {
       params[key] = (value is NSNull) ? NSNull() : String(describing: value)
     }
-    return serialize(["name": eventInfo.event.description, "params": params])
+    var payload: [String: Any] = ["name": eventInfo.event.description, "params": params]
+    if case let .transactionComplete(transaction, product, _, _) = eventInfo.event {
+      payload["transaction"] = [
+        "productId": product.productIdentifier,
+        "transactionId": transaction?.storeTransactionId.map { $0 as Any } ?? NSNull(),
+        "originalTransactionId": transaction?.originalTransactionIdentifier.map { $0 as Any } ?? NSNull(),
+        "purchaseToken": NSNull(),
+        "signature": NSNull(),
+      ]
+    }
+    return serialize(payload)
+  }
+
+  private static func storeProductsError(_ message: String) -> String {
+    serialize(["products": [], "error": message])
+  }
+
+  private static func storeProductsJson(_ products: Set<StoreProduct>) -> String {
+    let items = products.sorted { $0.productIdentifier < $1.productIdentifier }.map { product in
+      [
+        "productId": product.productIdentifier,
+        "price": NSDecimalNumber(decimal: product.price),
+        "localizedPrice": product.localizedPrice,
+        "currencyCode": product.currencyCode.map { $0 as Any } ?? NSNull(),
+        "currencySymbol": product.currencySymbol.map { $0 as Any } ?? NSNull(),
+      ] as [String: Any]
+    }
+    return serialize(["products": items, "error": NSNull()])
+  }
+
+  private static func storePurchaseResultJson(_ result: PurchaseResult) -> String {
+    switch result {
+    case .purchased: return serialize(["status": "purchased", "error": NSNull()])
+    case .cancelled: return serialize(["status": "canceled", "error": NSNull()])
+    case .pending: return serialize(["status": "pending", "error": NSNull()])
+    case .failed(let error): return serialize(["status": "failed", "error": error.localizedDescription])
+    @unknown default: return serialize(["status": "failed", "error": "Unknown purchase result"])
+    }
   }
 
   private static func parseObject(_ json: String?) -> [String: Any]? {

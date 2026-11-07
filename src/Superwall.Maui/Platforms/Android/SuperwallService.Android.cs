@@ -11,6 +11,7 @@ internal sealed partial class SuperwallService
     private readonly HashSet<DismissCallback> _activeDismissCallbacks = [];
     private readonly HashSet<RestoreCallback> _activeRestoreCallbacks = [];
     private readonly HashSet<PresentationResultCallback> _activePresentationResultCallbacks = [];
+    private readonly HashSet<NativeJsonCallback> _activeDirectPurchaseCallbacks = [];
     private EventListener? _eventListener;
     private DelegateListener? _delegateListener;
     private ActivityProvider? _activityProvider;
@@ -63,6 +64,15 @@ internal sealed partial class SuperwallService
     private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync() =>
         Task.FromResult(BridgeJson.ParseSubscriptionStatus(SuperwallMauiBridge.SubscriptionStatusJson));
 
+    private partial Task<IReadOnlyList<StoreProductInfo>> PlatformGetProductsAsync(string productIdsJson) =>
+        InvokeNativeJsonAsync(callback => SuperwallMauiBridge.GetProducts(productIdsJson, callback), BridgeJson.ParseStoreProducts);
+
+    private partial Task<StorePurchaseResult> PlatformPurchaseAsync(string productId) =>
+        InvokeNativeJsonAsync(callback => SuperwallMauiBridge.Purchase(productId, callback), BridgeJson.ParseStorePurchaseResult);
+
+    private partial Task<StoreConsumeResult> PlatformConsumePurchaseAsync(string purchaseToken) =>
+        InvokeNativeJsonAsync(callback => SuperwallMauiBridge.ConsumePurchase(purchaseToken, callback), BridgeJson.ParseStoreConsumeResult);
+
     private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync()
     {
         var tcs = new TaskCompletionSource<RestorePurchasesResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -112,6 +122,38 @@ internal sealed partial class SuperwallService
 
     private partial void PlatformSetLogLevel(string level) => SuperwallMauiBridge.SetLogLevel(level);
 
+    private Task<T> InvokeNativeJsonAsync<T>(Action<IJsonCallback> invoke, Func<string, T> parse)
+    {
+        var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callback = new NativeJsonCallback(this, json =>
+        {
+            try
+            {
+                completion.TrySetResult(parse(json));
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                completion.TrySetException(ex);
+            }
+        });
+        lock (_activeDirectPurchaseCallbacks)
+        {
+            _activeDirectPurchaseCallbacks.Add(callback);
+        }
+
+        try
+        {
+            invoke(callback);
+        }
+        catch
+        {
+            Release(callback);
+            throw;
+        }
+
+        return completion.Task;
+    }
+
     private void Release(PresentationListener listener)
     {
         lock (_activeListeners)
@@ -144,6 +186,14 @@ internal sealed partial class SuperwallService
         }
     }
 
+    private void Release(NativeJsonCallback callback)
+    {
+        lock (_activeDirectPurchaseCallbacks)
+        {
+            _activeDirectPurchaseCallbacks.Remove(callback);
+        }
+    }
+
     private sealed class PresentationResultCallback(SuperwallService owner, TaskCompletionSource<PresentationResult> completion)
         : Java.Lang.Object, IJsonCallback
     {
@@ -159,6 +209,16 @@ internal sealed partial class SuperwallService
             {
                 RunOnMainThread(() => completion.TrySetException(ex));
             }
+        }
+    }
+
+    private sealed class NativeJsonCallback(SuperwallService owner, Action<string> onComplete)
+        : Java.Lang.Object, IJsonCallback
+    {
+        public void OnComplete(string json)
+        {
+            owner.Release(this);
+            onComplete(json);
         }
     }
 
@@ -271,14 +331,12 @@ internal sealed partial class SuperwallService
             try
             {
                 info = BridgeJson.ParseEvent(eventJson);
+                owner.RaiseEvent(info);
             }
             catch (JsonException ex)
             {
                 Console.WriteLine($"[Superwall.Maui] Dropped malformed event: {ex.Message}");
-                return;
             }
-
-            owner.RaiseEvent(info);
         }
     }
 }

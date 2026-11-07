@@ -45,6 +45,43 @@ internal sealed class EventDto
 {
     public string? Name { get; set; }
     public Dictionary<string, string?>? Params { get; set; }
+    public PurchaseTransactionDto? Transaction { get; set; }
+}
+
+internal sealed class PurchaseTransactionDto
+{
+    public string? ProductId { get; set; }
+    public string? TransactionId { get; set; }
+    public string? OriginalTransactionId { get; set; }
+    public string? PurchaseToken { get; set; }
+    public string? Signature { get; set; }
+}
+
+internal sealed class StoreProductsResultDto
+{
+    public List<StoreProductDto>? Products { get; set; }
+    public string? Error { get; set; }
+}
+
+internal sealed class StoreProductDto
+{
+    public string? ProductId { get; set; }
+    public decimal Price { get; set; }
+    public string? LocalizedPrice { get; set; }
+    public string? CurrencyCode { get; set; }
+    public string? CurrencySymbol { get; set; }
+}
+
+internal sealed class StorePurchaseResultDto
+{
+    public string? Status { get; set; }
+    public string? Error { get; set; }
+}
+
+internal sealed class StoreConsumeResultDto
+{
+    public string? Status { get; set; }
+    public string? Error { get; set; }
 }
 
 internal sealed class SubscriptionStatusDto
@@ -92,6 +129,9 @@ internal sealed class UrlDto
 [JsonSerializable(typeof(PaywallResultDto))]
 [JsonSerializable(typeof(SkipReasonDto))]
 [JsonSerializable(typeof(EventDto))]
+[JsonSerializable(typeof(StoreProductsResultDto))]
+[JsonSerializable(typeof(StorePurchaseResultDto))]
+[JsonSerializable(typeof(StoreConsumeResultDto))]
 [JsonSerializable(typeof(SubscriptionStatusDto))]
 [JsonSerializable(typeof(RestorePurchasesResultDto))]
 [JsonSerializable(typeof(PresentationResultDto))]

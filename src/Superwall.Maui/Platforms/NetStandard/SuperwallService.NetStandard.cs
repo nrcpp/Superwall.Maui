@@ -13,6 +13,15 @@ internal sealed partial class SuperwallService
     private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync() =>
         throw new PlatformNotSupportedException("Superwall is supported on iOS and Android only.");
 
+    private partial Task<IReadOnlyList<StoreProductInfo>> PlatformGetProductsAsync(string productIdsJson) =>
+        throw new PlatformNotSupportedException("Superwall is supported on iOS and Android only.");
+
+    private partial Task<StorePurchaseResult> PlatformPurchaseAsync(string productId) =>
+        throw new PlatformNotSupportedException("Superwall is supported on iOS and Android only.");
+
+    private partial Task<StoreConsumeResult> PlatformConsumePurchaseAsync(string purchaseToken) =>
+        throw new PlatformNotSupportedException("Superwall is supported on Android only.");
+
     private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync() =>
         throw new PlatformNotSupportedException("Superwall is supported on iOS and Android only.");
 

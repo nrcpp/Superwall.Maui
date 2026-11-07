@@ -26,7 +26,14 @@ public partial class MainPage : ContentPage
 			return;
 		}
 
-		_superwall.EventReceived += (_, e) => Log($"event: {e.Name}");
+		_superwall.EventReceived += (_, e) =>
+		{
+			Log($"event: {e.Name}");
+			if (e.Transaction is { } transaction)
+			{
+				Log($"transaction_complete: {transaction.ProductId}; transactionId={transaction.TransactionId ?? "n/a"}; purchaseTokenPresent={transaction.PurchaseToken is not null}");
+			}
+		};
 		_superwall.PaywallWillPresent += (_, info) => Log($"delegate: willPresent {info.Identifier}");
 		_superwall.PaywallDidPresent += (_, info) => Log($"delegate: didPresent {info.Identifier}; IsPaywallPresented={_superwall.IsPaywallPresented}");
 		_superwall.PaywallWillDismiss += (_, info) => Log($"delegate: willDismiss {info.Identifier}");
@@ -112,6 +119,64 @@ public partial class MainPage : ContentPage
 		catch (Exception ex)
 		{
 			Log($"restore failed: {ex.Message}");
+		}
+	}
+
+	private async void OnGetProductsClicked(object? sender, EventArgs e)
+	{
+		if (_superwall is null)
+		{
+			return;
+		}
+
+		var productIds = (ProductIdsEntry.Text ?? string.Empty)
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		if (productIds.Length == 0)
+		{
+			Log("enter one or more store product IDs");
+			return;
+		}
+
+		try
+		{
+			var products = await _superwall.GetProductsAsync(productIds);
+			ProductsPicker.ItemsSource = products.ToList();
+			ProductsPicker.SelectedIndex = products.Count == 0 ? -1 : 0;
+			foreach (var product in products)
+			{
+				Log($"product: {product.ProductId} {product.LocalizedPrice} ({product.CurrencyCode ?? "currency n/a"})");
+			}
+		}
+		catch (Exception ex)
+		{
+			Log($"product lookup failed: {ex.Message}");
+		}
+	}
+
+	private async void OnPurchaseClicked(object? sender, EventArgs e)
+	{
+		if (_superwall is null || ProductsPicker.SelectedItem is not StoreProductInfo product)
+		{
+			Log("select a product before purchasing");
+			return;
+		}
+
+		try
+		{
+			var result = await _superwall.PurchaseAsync(product.ProductId);
+			Log($"purchase {product.ProductId}: {result.Status}; {result.Error ?? "no error"}");
+		}
+		catch (Exception ex)
+		{
+			Log($"purchase failed: {ex.Message}");
+		}
+	}
+
+	private void OnProductSelectionChanged(object? sender, EventArgs e)
+	{
+		if (ProductsPicker.SelectedItem is StoreProductInfo product)
+		{
+			ProductDetailsLabel.Text = $"{product.LocalizedPrice} {product.CurrencyCode}; backend verification required before credits are granted.";
 		}
 	}
 

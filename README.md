@@ -168,6 +168,51 @@ static void Forward(string? url)
 - Android: add `[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable], DataScheme = "your-scheme")]` to `MainActivity`.
 - Enter the same scheme in the Superwall dashboard under Settings → General.
 
+## Direct purchases and credits
+
+Superwall's native SDK can list App Store / Google Play products and start purchases without presenting a paywall:
+
+```csharp
+var products = await superwall.GetProductsAsync(
+    ["credits_10", "credits_25", "credits_60"]);
+var selected = products.Single(product => product.ProductId == "credits_25");
+Console.WriteLine($"{selected.LocalizedPrice} ({selected.CurrencyCode})");
+
+var result = await superwall.PurchaseAsync(selected.ProductId);
+switch (result.Status)
+{
+    case StorePurchaseStatus.Purchased:
+        // Wait for transaction_complete / EventReceived.Transaction, then verify on your backend.
+        break;
+    case StorePurchaseStatus.Canceled:
+    case StorePurchaseStatus.Pending:
+    case StorePurchaseStatus.Failed:
+        break;
+}
+```
+
+Subscribe before purchasing to receive the native transaction identifier and, on Android, the Play purchase token:
+
+```csharp
+superwall.EventReceived += async (_, e) =>
+{
+    if (e.Transaction is not { } transaction)
+        return;
+
+    var grant = await creditsApi.VerifyAndGrantAsync(
+        transaction.ProductId,
+        transaction.TransactionId,
+        transaction.OriginalTransactionId,
+        transaction.PurchaseToken,
+        transaction.Signature);
+
+    if (grant.Granted && transaction.PurchaseToken is { } token)
+        await superwall.ConsumePurchaseAsync(token);
+};
+```
+
+The backend must verify the store transaction before granting credits. Consume a Google Play token only after the backend confirms the credit grant; retry consumption if it fails. iOS returns `StoreConsumeStatus.NotSupported`. Configure credit products as consumables with **no Superwall entitlement**, so buying credits never activates `PRO`. Subscriptions and paywall purchases continue through their existing Superwall flow.
+
 ## Manual setup checklist
 
 | Platform | What | Why |
@@ -184,7 +229,7 @@ The Android library manifest already declares `SuperwallPaywallActivity` and the
 ## Limitations
 
 - iOS and Android only. The `net10.0` target exists for shared libraries and unit tests: there `IsConfigured` is false and methods throw `PlatformNotSupportedException`.
-- Not bridged yet: `PurchaseController`, direct `purchase(product)` and `getProducts`, `customerInfo`, Customer Center, web checkout redemption callbacks, `handleLog`, assignments, integration attributes.
+- Not bridged yet: `PurchaseController`, full `customerInfo`, Customer Center, web checkout redemption callbacks, `handleLog`, assignments, integration attributes. `GetProductsAsync` fetches only the known IDs supplied by the app; it does not enumerate the store's full catalog.
 - `PaywallSkippedReason.UserIsSubscribed` is reported by Android only.
 - Event names in `EventReceived` are the raw native SDK names, and their style is mixed (`paywall_open`, `subscriptionStatus_didChange`).
 - Building the package itself requires macOS (Xcode builds the iOS bridge). Consuming the package doesn't.

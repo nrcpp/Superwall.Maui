@@ -54,6 +54,43 @@ internal sealed partial class SuperwallService
     private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync() =>
         Task.FromResult(BridgeJson.ParseSubscriptionStatus(SWMBridge.Shared.GetSubscriptionStatusJson()));
 
+    private partial Task<IReadOnlyList<StoreProductInfo>> PlatformGetProductsAsync(string productIdsJson)
+    {
+        var completion = new TaskCompletionSource<IReadOnlyList<StoreProductInfo>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SWMBridge.Shared.GetProducts(productIdsJson, json =>
+        {
+            try
+            {
+                completion.TrySetResult(BridgeJson.ParseStoreProducts(json));
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                completion.TrySetException(ex);
+            }
+        });
+        return completion.Task;
+    }
+
+    private partial Task<StorePurchaseResult> PlatformPurchaseAsync(string productId)
+    {
+        var completion = new TaskCompletionSource<StorePurchaseResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SWMBridge.Shared.PurchaseProduct(productId, json =>
+        {
+            try
+            {
+                completion.TrySetResult(BridgeJson.ParseStorePurchaseResult(json));
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                completion.TrySetException(ex);
+            }
+        });
+        return completion.Task;
+    }
+
+    private partial Task<StoreConsumeResult> PlatformConsumePurchaseAsync(string purchaseToken) =>
+        Task.FromResult(new StoreConsumeResult(StoreConsumeStatus.NotSupported, "Google Play purchase tokens can only be consumed on Android."));
+
     private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync()
     {
         var tcs = new TaskCompletionSource<RestorePurchasesResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -185,14 +222,12 @@ internal sealed partial class SuperwallService
             try
             {
                 info = BridgeJson.ParseEvent(eventJson);
+                owner.RaiseEvent(info);
             }
             catch (JsonException ex)
             {
                 Console.WriteLine($"[Superwall.Maui] Dropped malformed event: {ex.Message}");
-                return;
             }
-
-            owner.RaiseEvent(info);
         }
     }
 

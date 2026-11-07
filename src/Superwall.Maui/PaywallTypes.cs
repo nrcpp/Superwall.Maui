@@ -44,7 +44,11 @@ public enum PaywallSkippedReason
 }
 
 /// <summary>A raw Superwall event, e.g. <c>paywall_open</c>.</summary>
-public sealed record SuperwallEventInfo(string Name, IReadOnlyDictionary<string, string?> Params);
+public sealed record SuperwallEventInfo(string Name, IReadOnlyDictionary<string, string?> Params)
+{
+    /// <summary>Native store transaction details for <c>transaction_complete</c>; otherwise null.</summary>
+    public PurchaseTransactionInfo? Transaction { get; init; }
+}
 
 public enum SuperwallSubscriptionState
 {
@@ -58,6 +62,43 @@ public sealed record SubscriptionStatusInfo(
     IReadOnlyList<string> ActiveEntitlementIds);
 
 public sealed record RestorePurchasesResult(bool WasSuccessful, string? Error);
+
+/// <summary>A store product fetched by its App Store or Google Play product ID.</summary>
+public sealed record StoreProductInfo(
+    string ProductId,
+    decimal Price,
+    string LocalizedPrice,
+    string? CurrencyCode,
+    string? CurrencySymbol);
+
+public enum StorePurchaseStatus
+{
+    Purchased,
+    Canceled,
+    Pending,
+    Failed,
+}
+
+/// <summary>Outcome returned by Superwall's native direct-purchase API.</summary>
+public sealed record StorePurchaseResult(StorePurchaseStatus Status, string? Error = null);
+
+public enum StoreConsumeStatus
+{
+    Consumed,
+    NotSupported,
+    Failed,
+}
+
+/// <summary>Result of consuming a Google Play in-app purchase token.</summary>
+public sealed record StoreConsumeResult(StoreConsumeStatus Status, string? Error = null);
+
+/// <summary>Store transaction data emitted by Superwall's native transaction-complete event.</summary>
+public sealed record PurchaseTransactionInfo(
+    string ProductId,
+    string? TransactionId,
+    string? OriginalTransactionId,
+    string? PurchaseToken,
+    string? Signature);
 
 /// <summary>What registering a placement would do right now, without presenting anything.</summary>
 public abstract record PresentationResult

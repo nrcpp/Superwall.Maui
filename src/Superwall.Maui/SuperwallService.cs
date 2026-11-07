@@ -52,6 +52,31 @@ internal sealed partial class SuperwallService : ISuperwall
 
     public Task<SubscriptionStatusInfo> GetSubscriptionStatusAsync() => PlatformGetSubscriptionStatusAsync();
 
+    public Task<IReadOnlyList<StoreProductInfo>> GetProductsAsync(IEnumerable<string> productIds)
+    {
+        ArgumentNullException.ThrowIfNull(productIds);
+        var ids = productIds.Select(id =>
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(id);
+            return id;
+        }).Distinct(StringComparer.Ordinal).ToArray();
+        return ids.Length == 0
+            ? Task.FromResult<IReadOnlyList<StoreProductInfo>>(Array.Empty<StoreProductInfo>())
+            : PlatformGetProductsAsync(BridgeJson.SerializeProductIds(ids));
+    }
+
+    public Task<StorePurchaseResult> PurchaseAsync(string productId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(productId);
+        return PlatformPurchaseAsync(productId);
+    }
+
+    public Task<StoreConsumeResult> ConsumePurchaseAsync(string purchaseToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(purchaseToken);
+        return PlatformConsumePurchaseAsync(purchaseToken);
+    }
+
     public Task<RestorePurchasesResult> RestorePurchasesAsync() => PlatformRestorePurchasesAsync();
 
     public void Identify(string userId, bool restorePaywallAssignments = false)
@@ -111,6 +136,12 @@ internal sealed partial class SuperwallService : ISuperwall
     private partial Task PlatformDismissAsync();
 
     private partial Task<SubscriptionStatusInfo> PlatformGetSubscriptionStatusAsync();
+
+    private partial Task<IReadOnlyList<StoreProductInfo>> PlatformGetProductsAsync(string productIdsJson);
+
+    private partial Task<StorePurchaseResult> PlatformPurchaseAsync(string productId);
+
+    private partial Task<StoreConsumeResult> PlatformConsumePurchaseAsync(string purchaseToken);
 
     private partial Task<RestorePurchasesResult> PlatformRestorePurchasesAsync();
 

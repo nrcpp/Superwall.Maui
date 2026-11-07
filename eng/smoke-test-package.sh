@@ -53,6 +53,14 @@ namespace SuperwallSmoke;
 
 public partial class MainPage : ContentPage
 {
+	private static async Task DirectPurchaseApiCompileCheck(ISuperwall superwall)
+	{
+		var products = await superwall.GetProductsAsync(["smoke.credits.10"]);
+		var purchase = await superwall.PurchaseAsync(products.FirstOrDefault()?.ProductId ?? "smoke.credits.10");
+		var consume = await superwall.ConsumePurchaseAsync("smoke-purchase-token");
+		_ = (purchase, consume);
+	}
+
 	public MainPage()
 	{
 		InitializeComponent();

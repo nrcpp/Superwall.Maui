@@ -25,6 +25,19 @@ public interface ISuperwall
     /// <summary>Reads the native SDK's current subscription state and active entitlement identifiers.</summary>
     Task<SubscriptionStatusInfo> GetSubscriptionStatusAsync();
 
+    /// <summary>Fetches localized store product details for the supplied identifiers. Unknown or unavailable products are omitted.</summary>
+    Task<IReadOnlyList<StoreProductInfo>> GetProductsAsync(IEnumerable<string> productIds) =>
+        Task.FromException<IReadOnlyList<StoreProductInfo>>(new NotSupportedException("This ISuperwall implementation does not support product lookup."));
+
+    /// <summary>Purchases a StoreKit or Google Play product through Superwall, without presenting a paywall.</summary>
+    Task<StorePurchaseResult> PurchaseAsync(string productId) =>
+        Task.FromException<StorePurchaseResult>(new NotSupportedException("This ISuperwall implementation does not support direct purchases."));
+
+    /// <summary>Consumes a Google Play consumable token after the backend has verified the transaction and granted its benefit.</summary>
+    /// <remarks>Returns <see cref="StoreConsumeStatus.NotSupported"/> on iOS.</remarks>
+    Task<StoreConsumeResult> ConsumePurchaseAsync(string purchaseToken) =>
+        Task.FromResult(new StoreConsumeResult(StoreConsumeStatus.NotSupported));
+
     /// <summary>
     /// Restores purchases. A successful restore does not imply an active entitlement;
     /// call <see cref="GetSubscriptionStatusAsync"/> to read the resulting state.

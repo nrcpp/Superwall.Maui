@@ -62,6 +62,41 @@ public class BridgeJsonTests
     }
 
     [Fact]
+    public void Event_ParsesPurchaseTransactionIdentifiers()
+    {
+        var transaction = BridgeJson.ParsePurchaseTransaction(
+            """{"name":"transaction_complete","params":{},"transaction":{"productId":"credits_10","transactionId":"txn_1","originalTransactionId":"orig_1","purchaseToken":"token_1","signature":"sig_1"}}""");
+
+        Assert.Equal(new PurchaseTransactionInfo("credits_10", "txn_1", "orig_1", "token_1", "sig_1"), transaction);
+        Assert.Null(BridgeJson.ParsePurchaseTransaction("""{"name":"paywall_open","params":{}}"""));
+    }
+
+    [Fact]
+    public void StoreProducts_ParseLocalizedPriceAndCurrency()
+    {
+        var products = BridgeJson.ParseStoreProducts(
+            """{"products":[{"productId":"credits_10","price":4.99,"localizedPrice":"$4.99","currencyCode":"USD","currencySymbol":"$"}]}""");
+
+        Assert.Equal(new StoreProductInfo("credits_10", 4.99m, "$4.99", "USD", "$"), Assert.Single(products));
+    }
+
+    [Theory]
+    [InlineData("purchased", StorePurchaseStatus.Purchased)]
+    [InlineData("canceled", StorePurchaseStatus.Canceled)]
+    [InlineData("pending", StorePurchaseStatus.Pending)]
+    [InlineData("failed", StorePurchaseStatus.Failed)]
+    public void StorePurchaseResult_MapsNativeStatuses(string wire, StorePurchaseStatus expected) =>
+        Assert.Equal(expected, BridgeJson.ParseStorePurchaseResult($$"""{"status":"{{wire}}"}""").Status);
+
+    [Fact]
+    public void StoreConsumeResult_MapsAndroidStatuses()
+    {
+        Assert.Equal(StoreConsumeStatus.Consumed, BridgeJson.ParseStoreConsumeResult("""{"status":"consumed"}""").Status);
+        Assert.Equal(StoreConsumeStatus.NotSupported, BridgeJson.ParseStoreConsumeResult("""{"status":"notSupported"}""").Status);
+        Assert.Equal(StoreConsumeStatus.Failed, BridgeJson.ParseStoreConsumeResult("""{"status":"failed","error":"billing unavailable"}""").Status);
+    }
+
+    [Fact]
     public void SubscriptionStatus_ParsesActiveEntitlements()
     {
         var status = BridgeJson.ParseSubscriptionStatus("""{"status":"active","activeEntitlementIds":["pro"]}""");
