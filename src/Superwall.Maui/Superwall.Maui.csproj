@@ -15,7 +15,7 @@
 
     <PackageId>Superwall.Maui</PackageId>
     <Title>Superwall.Maui</Title>
-    <Version>1.0.0-preview.4</Version>
+    <Version>1.0.0-preview.5</Version>
     <Authors>Denys Kazakov</Authors>
     <Description>Unofficial .NET MAUI bridge to the official Superwall SDKs (SuperwallKit $(SuperwallIosVersion), superwall-android $(SuperwallAndroidVersion)) for iOS and Android: remote paywalls, purchases and restore, subscription status, user identity and attributes, paywall delegate events and deep links. Not affiliated with Superwall.</Description>
     <Copyright>Copyright (c) 2026 Denys Kazakov</Copyright>
@@ -27,7 +27,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>Adds direct product lookup/purchase via Superwall SDK and Android consumable token consumption. Transaction IDs and purchase tokens are available from EventReceived.Transaction. Native SDK versions: SuperwallKit $(SuperwallIosVersion), superwall-android $(SuperwallAndroidVersion). Full list: https://github.com/nrcpp/Superwall.Maui/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixes an iOS crash after every completed purchase (transaction_complete event serialization). Native SDK versions: SuperwallKit $(SuperwallIosVersion), superwall-android $(SuperwallAndroidVersion). Full list: https://github.com/nrcpp/Superwall.Maui/blob/main/CHANGELOG.md</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EnablePackageValidation>true</EnablePackageValidation>

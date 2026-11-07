@@ -446,7 +446,7 @@ public final class SWMBridge: NSObject {
       payload["transaction"] = [
         "productId": product.productIdentifier,
         "transactionId": transaction?.storeTransactionId.map { $0 as Any } ?? NSNull(),
-        "originalTransactionId": transaction?.originalTransactionIdentifier.map { $0 as Any } ?? NSNull(),
+        "originalTransactionId": transaction.map { $0.originalTransactionIdentifier as Any } ?? NSNull(),
         "purchaseToken": NSNull(),
         "signature": NSNull(),
       ]
@@ -487,7 +487,9 @@ public final class SWMBridge: NSObject {
   }
 
   fileprivate static func serialize(_ object: [String: Any]) -> String {
+    // data(withJSONObject:) raises an uncatchable NSException (app crash) on non-JSON values instead of throwing.
     guard
+      JSONSerialization.isValidJSONObject(object),
       let data = try? JSONSerialization.data(withJSONObject: object),
       let string = String(data: data, encoding: .utf8)
     else {

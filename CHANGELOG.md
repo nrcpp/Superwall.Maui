@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-preview.5
+
+Fixes an iOS crash (`NSInvalidArgumentException: Invalid type in JSON write (__SwiftValue)`) right after every
+completed purchase: the `transaction_complete` event wrote `originalTransactionId` as an array of Swift characters.
+The iOS bridge now also skips any payload that isn't valid JSON instead of crashing the app. No public API changes.
+
 ## 1.0.0-preview.4
 
 Adds direct product lookup and purchase through the native Superwall SDKs, plus Android consumable token consumption. Purchase outcomes are typed; transaction IDs and Play purchase tokens are included with the existing transaction-complete event. Credits should be verified and granted by the app backend, without assigning a PRO entitlement.
