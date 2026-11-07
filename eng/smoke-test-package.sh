@@ -29,7 +29,7 @@ cat > nuget.config <<EOF
 EOF
 
 # Only the platforms the package supports; Android minSdk 23 is required (template default 21 fails manifest merge).
-sed -i '' -E 's#<TargetFrameworks>.*</TargetFrameworks>#<TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>#' SuperwallSmoke.csproj
+sed -i '' -E 's#<TargetFrameworks>.*</TargetFrameworks>#<TargetFrameworks>net10.0-android;net10.0-ios26.0</TargetFrameworks>#' SuperwallSmoke.csproj
 sed -i '' -E '/<TargetFrameworks Condition=/d' SuperwallSmoke.csproj
 sed -i '' -E "s#(== 'android'\">)21\.0<#\123.0<#" SuperwallSmoke.csproj
 if [[ -n "${SWM_APP_ID:-}" ]]; then
@@ -79,9 +79,9 @@ public partial class MainPage : ContentPage
 }
 EOF
 
-for TFM in net10.0-android net10.0-ios; do
+for TFM in net10.0-android net10.0-ios26.0; do
   ARGS=(-f "$TFM")
-	[[ "$TFM" == net10.0-ios ]] && ARGS+=(-p:RuntimeIdentifier=iossimulator-arm64 -p:ValidateXcodeVersion=false)
+	[[ "$TFM" == net10.0-ios26.0 ]] && ARGS+=(-p:RuntimeIdentifier=iossimulator-arm64 -p:ValidateXcodeVersion=false)
   LOG="$DIR/build-$TFM.log"
   dotnet build "${ARGS[@]}" -v:n > "$LOG" 2>&1 || { tail -30 "$LOG"; exit 1; }
   if grep -Eq "xcodebuild (archive|build)|gradlew" "$LOG"; then
