@@ -81,7 +81,7 @@ EOF
 
 for TFM in net10.0-android net10.0-ios; do
   ARGS=(-f "$TFM")
-  [[ "$TFM" == net10.0-ios ]] && ARGS+=(-p:RuntimeIdentifier=iossimulator-arm64)
+	[[ "$TFM" == net10.0-ios ]] && ARGS+=(-p:RuntimeIdentifier=iossimulator-arm64 -p:ValidateXcodeVersion=false)
   LOG="$DIR/build-$TFM.log"
   dotnet build "${ARGS[@]}" -v:n > "$LOG" 2>&1 || { tail -30 "$LOG"; exit 1; }
   if grep -Eq "xcodebuild (archive|build)|gradlew" "$LOG"; then
