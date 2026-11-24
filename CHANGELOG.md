@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+First stable release. Same code and native SDK versions as 1.0.0-preview.5; no public API or behavior changes.
+
 ## 1.0.0-preview.5
 
 Fixes an iOS crash (`NSInvalidArgumentException: Invalid type in JSON write (__SwiftValue)`) right after every
