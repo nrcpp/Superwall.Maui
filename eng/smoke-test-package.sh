@@ -35,7 +35,7 @@ sed -i '' -E "s#(== 'android'\">)21\.0<#\123.0<#" SuperwallSmoke.csproj
 if [[ -n "${SWM_APP_ID:-}" ]]; then
   sed -i '' -E "s#<ApplicationId>.*</ApplicationId>#<ApplicationId>$SWM_APP_ID</ApplicationId>#" SuperwallSmoke.csproj
 fi
-dotnet add package Superwall.Maui --version "$VERSION" >/dev/null
+dotnet add package Superwall.Maui --version "$VERSION" > add-package.log 2>&1 || { cat add-package.log; exit 1; }
 
 # Minimal integration: UseSuperwall + a button that registers a placement.
 sed -i '' -E 's#\.UseMauiApp<App>\(\)#.UseMauiApp<App>()\
