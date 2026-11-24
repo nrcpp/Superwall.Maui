@@ -16,6 +16,9 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 rm -rf "$DIR"
 dotnet new maui -n SuperwallSmoke -o "$DIR" --no-restore >/dev/null
 cd "$DIR"
+# Use the repo SDK (global.json). Outside the repo dotnet picks the newest installed SDK (11.0 on GitHub runners
+# since 2026-11), which has no MAUI workloads: NETSDK1147.
+cp "$ROOT/global.json" .
 
 cat > nuget.config <<EOF
 <?xml version="1.0" encoding="utf-8"?>
